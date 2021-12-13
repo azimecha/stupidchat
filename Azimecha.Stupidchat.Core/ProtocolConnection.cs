@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Azimecha.Stupidchat.Core {
     public class ProtocolConnection : IDisposable {
-        private IMessageConnection _conn;
+        private NetworkConnection _conn;
         private WeakReference<IRequestProcessor> _cbRequest;
         private WeakReference<INotificationProcessor> _cbNotif;
         private WeakReference<IErrorProcessor> _cbError;
@@ -42,6 +42,8 @@ namespace Azimecha.Stupidchat.Core {
             }
         }
 
+        public ReadOnlySpan<byte> PartnerPublicKey => _conn.PartnerPublicKey;
+
         public Task<Protocol.ResponseMessage> IssueRequest(Protocol.RequestMessage msgRequest) {
             msgRequest.ID = Interlocked.Increment(ref _nRequestID);
 
@@ -65,6 +67,9 @@ namespace Azimecha.Stupidchat.Core {
             taskResp.CheckFinished();
             return taskResp.Result;
         }
+
+        public TResp PerformRequest<TResp>(Protocol.RequestMessage msgRequest) where TResp : Protocol.ResponseMessage
+            => (TResp)PerformRequest(msgRequest);
 
         public void SendNotification(Protocol.NotificationMessage msgNotif) {
             _conn.SendMessage(Encoding.UTF8.GetBytes(msgNotif.Serialize()));

@@ -29,6 +29,8 @@ namespace Azimecha.Stupidchat.Core {
 
         private IMessageConnection Frontend => (IMessageConnection)_mcSymmetric ?? (IMessageConnection)_mcAsymmetric;
 
+        public ReadOnlySpan<byte> PartnerPublicKey => _mcAsymmetric.TheirPublicKey;
+
         public long MaximumMessageSize { 
             get => Frontend.MaximumMessageSize;
             set => Frontend.MaximumMessageSize = value;
