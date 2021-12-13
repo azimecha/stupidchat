@@ -24,14 +24,14 @@ namespace Azimecha.Stupidchat.NetworkingTest {
 
         private static void ServerThread() {
             Random rand = new Random(1);
-            byte[] arrPrivateKey = new byte[Core.StupidchatNetworkConnection.PrivateKeySize];
+            byte[] arrPrivateKey = new byte[Core.NetworkConnection.PrivateKeySize];
             rand.NextBytes(arrPrivateKey);
 
             TcpListener listener = new TcpListener(IPAddress.Loopback, 22200);
             listener.Start();
 
             TcpClient client = listener.AcceptTcpClient();
-            using (Core.StupidchatNetworkConnection conn = new Core.StupidchatNetworkConnection(client, true, arrPrivateKey)) {
+            using (Core.NetworkConnection conn = new Core.NetworkConnection(client, true, arrPrivateKey)) {
                 conn.Initialize();
                 conn.SendMessage(Encoding.ASCII.GetBytes("Hello from server!"));
                 string strResp = Encoding.ASCII.GetString(conn.ReceiveMesssage());
@@ -41,13 +41,13 @@ namespace Azimecha.Stupidchat.NetworkingTest {
 
         private static void ClientThread() {
             Random rand = new Random(2);
-            byte[] arrPrivateKey = new byte[Core.StupidchatNetworkConnection.PrivateKeySize];
+            byte[] arrPrivateKey = new byte[Core.NetworkConnection.PrivateKeySize];
             rand.NextBytes(arrPrivateKey);
 
             TcpClient client = new TcpClient();
             client.Connect(IPAddress.Loopback, 22200);
 
-            using (Core.StupidchatNetworkConnection conn = new Core.StupidchatNetworkConnection(client, true, arrPrivateKey)) {
+            using (Core.NetworkConnection conn = new Core.NetworkConnection(client, true, arrPrivateKey)) {
                 conn.Initialize();
                 string strResp = Encoding.ASCII.GetString(conn.ReceiveMesssage());
                 conn.SendMessage(Encoding.ASCII.GetBytes("Hello from client!"));

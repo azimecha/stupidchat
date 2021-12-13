@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace Azimecha.Stupidchat.Core.Cryptography {
-    public class RFC8439Cipher : ISymmetricCipher {
+    public class XChaCha20Poly1305Cipher : IAuthenticatedSymmetricCipher {
         public int AuthenticationCodeSize => 16;
         public int KeySize => 32;
         public int NonceSize => 24;

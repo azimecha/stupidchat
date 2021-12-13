@@ -51,17 +51,23 @@ namespace Azimecha.Stupidchat.Core {
             }
         }
 
-        public static void CheckStatus(this Task taskCheck) {
+        public static void CheckFinished(this Task taskCheck) {
             switch (taskCheck.Status) {
                 case TaskStatus.Faulted:
                     throw taskCheck.Exception;
 
                 case TaskStatus.Canceled:
                     throw new OperationCanceledException();
+
+                case TaskStatus.Running:
+                case TaskStatus.WaitingForActivation:
+                case TaskStatus.WaitingToRun:
+                case TaskStatus.WaitingForChildrenToComplete:
+                    throw new InvalidOperationException("Task still running");
             }
         }
 
-        public static void CheckStatus<T>(this Task<T> taskCheck) {
+        public static void CheckFinished<T>(this Task<T> taskCheck) {
             switch (taskCheck.Status) {
                 case TaskStatus.Faulted:
                     throw taskCheck.Exception;

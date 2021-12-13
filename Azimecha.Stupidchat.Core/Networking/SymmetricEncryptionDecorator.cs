@@ -6,11 +6,11 @@ using Azimecha.Stupidchat.Core.Cryptography;
 
 namespace Azimecha.Stupidchat.Core.Networking {
     public class SymmetricEncryptionDecorator : MessageConnectionDecorator {
-        private ISymmetricCipher _cipher;
+        private IAuthenticatedSymmetricCipher _cipher;
         private byte[] _arrKey;
 
         public SymmetricEncryptionDecorator(IMessageConnection conn, bool bDisposeConnection, 
-            ISymmetricCipher cipher, ReadOnlySpan<byte> spanKey) : base(conn, bDisposeConnection)
+            IAuthenticatedSymmetricCipher cipher, ReadOnlySpan<byte> spanKey) : base(conn, bDisposeConnection)
         {
             _cipher = cipher;
             _arrKey = spanKey.ToArray();

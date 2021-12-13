@@ -47,8 +47,8 @@ namespace Azimecha.Stupidchat.Core.Networking {
                 taskSendMyPubkey.Wait(INIT_TXRX_TIMEOUT);
                 taskRecvTheirPubkey.Wait(INIT_TXRX_TIMEOUT);
 
-                taskSendMyPubkey.CheckStatus();
-                taskRecvTheirPubkey.CheckStatus();
+                taskSendMyPubkey.CheckFinished();
+                taskRecvTheirPubkey.CheckFinished();
 
                 _arrTheirPublicKey = taskRecvTheirPubkey.Result;
                 _arrSymmetricKey = _cipher.PerformKeyExchange(MyPrivateKey, TheirPublicKey);

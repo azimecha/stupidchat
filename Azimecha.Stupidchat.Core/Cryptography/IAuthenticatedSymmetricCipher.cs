@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace Azimecha.Stupidchat.Core.Cryptography {
-    public interface ISymmetricCipher {
+    public interface IAuthenticatedSymmetricCipher {
         int AuthenticationCodeSize { get; }
         int KeySize { get; }
         int NonceSize { get; }

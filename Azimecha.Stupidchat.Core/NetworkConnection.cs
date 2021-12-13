@@ -8,7 +8,7 @@ using Azimecha.Stupidchat.Core.Networking;
 
 namespace Azimecha.Stupidchat.Core {
     // facade for managing the pipeline
-    public class StupidchatNetworkConnection : IMessageConnection {
+    public class NetworkConnection : IMessageConnection {
         private TcpClient _client;
         private bool _bDisposeTCPClient;
         private NetworkStream _stream;
@@ -16,7 +16,7 @@ namespace Azimecha.Stupidchat.Core {
         private AsymmetricKeyExchangeDecorator _mcAsymmetric;
         private SymmetricEncryptionDecorator _mcSymmetric;
 
-        public StupidchatNetworkConnection(TcpClient client, bool bDisposeTCPClient, ReadOnlySpan<byte> spanPrivateKey) {
+        public NetworkConnection(TcpClient client, bool bDisposeTCPClient, ReadOnlySpan<byte> spanPrivateKey) {
             _client = client;
             _bDisposeTCPClient = bDisposeTCPClient;
 
@@ -56,7 +56,7 @@ namespace Azimecha.Stupidchat.Core {
         }
 
         private void CreateSymmetricDecorator() {
-            _mcSymmetric = new SymmetricEncryptionDecorator(_mcAsymmetric, false, new Cryptography.RFC8439Cipher(), _mcAsymmetric.SymmetricKey);
+            _mcSymmetric = new SymmetricEncryptionDecorator(_mcAsymmetric, false, new Cryptography.XChaCha20Poly1305Cipher(), _mcAsymmetric.SymmetricKey);
         }
 
         public byte[] ReceiveMesssage() => Frontend.ReceiveMesssage();
