@@ -1,33 +1,28 @@
-﻿using System;
+﻿using Azimecha.Stupidchat.Core.Cryptography;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Azimecha.Stupidchat.Core.Cryptography;
-using Azimecha.Stupidchat.Core.Networking;
 
 namespace Azimecha.Stupidchat.Core.Networking {
-    public class AsymmetricKeyExchangeDecorator : MessageConnectionDecorator {
+    public class SigningChallengeDecorator : MessageConnectionDecorator {
+        private byte[] _arrTheirPublicKey;
         private byte[] _arrMyPrivateKey;
         private byte[] _arrMyPublicKey;
-        private byte[] _arrTheirPublicKey;
-        private byte[] _arrSymmetricKey;
         private bool _bInitialized;
-        private IAsymmetricCipher _cipher;
+        private ISigningAlgorithm _algo;
 
-        public AsymmetricKeyExchangeDecorator(IMessageConnection conn, bool bDisposeConnection, IAsymmetricCipher cipherAsym, 
-            ReadOnlySpan<byte> spanPrivateKey) : base(conn, bDisposeConnection)
+        public SigningChallengeDecorator(IMessageConnection conn, bool bDisposeConnection, ISigningAlgorithm algo, ReadOnlySpan<byte> spanMyPrivateKey) 
+            : base(conn, bDisposeConnection) 
         {
-            _cipher = cipherAsym;
-            _arrMyPrivateKey = spanPrivateKey.ToArray();
-            _arrMyPublicKey = _cipher.GetPublicKey(_arrMyPrivateKey);
+            _algo = algo;
+            _arrMyPrivateKey = spanMyPrivateKey.ToArray();
+            _arrMyPublicKey = _algo.GetPublicKey(spanMyPrivateKey);
         }
 
-        public ReadOnlySpan<byte> MyPrivateKey => new ReadOnlySpan<byte>(_arrMyPrivateKey);
-        public ReadOnlySpan<byte> MyPublicKey => new ReadOnlySpan<byte>(_arrMyPublicKey);
         public ReadOnlySpan<byte> TheirPublicKey => new ReadOnlySpan<byte>(_arrTheirPublicKey);
-        public ReadOnlySpan<byte> SymmetricKey => new ReadOnlySpan<byte>(_arrSymmetricKey);
 
         public override void Initialize() => Initialize(null);
         public override void Initialize(CancellationToken ct) => Initialize(ct);
@@ -40,10 +35,16 @@ namespace Azimecha.Stupidchat.Core.Networking {
 
             try {
                 _arrTheirPublicKey = Exchange(Connection, _arrMyPublicKey, INIT_TXRX_TIMEOUT, ct);
-                _arrSymmetricKey = _cipher.PerformKeyExchange(MyPrivateKey, TheirPublicKey);
+
+                byte[] arrChallengeForThem = CryptoUtils.GenerateNonce();
+                byte[] arrChallengeForMe = Exchange(Connection, arrChallengeForThem, INIT_TXRX_TIMEOUT, ct);
+
+                byte[] arrMySignature = _algo.Sign(_arrMyPrivateKey, _arrMyPublicKey, arrChallengeForMe);
+                byte[] arrTheirSignature = Exchange(Connection, arrMySignature, INIT_TXRX_TIMEOUT, ct);
+                _algo.Check(arrChallengeForThem, arrTheirSignature, _arrTheirPublicKey);
 
             } catch (Exception ex) {
-                Debug.WriteLine($"{ex.GetType().FullName} while initializing asymmetric encrypted connection! Disposing.");
+                Debug.WriteLine($"{ex.GetType().FullName} while performing signature challenge! Disposing.");
                 Dispose();
                 throw;
             }

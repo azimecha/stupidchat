@@ -15,21 +15,28 @@ namespace Azimecha.Stupidchat.Core {
         private StreamMessageAdaptor _mcBase;
         private AsymmetricKeyExchangeDecorator _mcAsymmetric;
         private SymmetricEncryptionDecorator _mcSymmetric;
+        private SigningChallengeDecorator _mcSigning;
+        private byte[] _arrConnectionKey;
+        private Cryptography.ISigningAlgorithm _algoSigning;
 
         public NetworkConnection(TcpClient client, bool bDisposeTCPClient, ReadOnlySpan<byte> spanPrivateKey) {
             _client = client;
             _bDisposeTCPClient = bDisposeTCPClient;
+            _algoSigning = new Cryptography.RFC8032Algorithm();
+            _arrConnectionKey = new byte[_algoSigning.PrivateKeySize];
+            new Cryptography.Dotnet6CryptoRNG().Fill(_arrConnectionKey);
 
             _stream = client.GetStream();
             _mcBase = new StreamMessageAdaptor(_stream, false);
             _mcAsymmetric = new AsymmetricKeyExchangeDecorator(_mcBase, false, new Cryptography.X25519Cipher(), spanPrivateKey);
         }
 
-        public static int PrivateKeySize => new Cryptography.X25519Cipher().PrivateKeySize;
+        public static Cryptography.ISigningAlgorithm CreateSigningAlgorithmInstance()
+            => new Cryptography.RFC8032Algorithm();
 
-        private IMessageConnection Frontend => (IMessageConnection)_mcSymmetric ?? (IMessageConnection)_mcAsymmetric;
+        private IMessageConnection Frontend => (IMessageConnection)_mcSigning ?? (IMessageConnection)_mcAsymmetric;
 
-        public ReadOnlySpan<byte> PartnerPublicKey => _mcAsymmetric.TheirPublicKey;
+        public ReadOnlySpan<byte> PartnerPublicKey => _mcSigning.TheirPublicKey;
 
         public long MaximumMessageSize { 
             get => Frontend.MaximumMessageSize;
@@ -49,16 +56,21 @@ namespace Azimecha.Stupidchat.Core {
 
         public void Initialize() {
             _mcAsymmetric.Initialize();
-            CreateSymmetricDecorator();
+            CreateAdditionalDecorators();
+            _mcSymmetric.Initialize();
+            _mcSigning.Initialize();
         }
 
         public void Initialize(CancellationToken ct) {
             _mcAsymmetric.Initialize(ct);
-            CreateSymmetricDecorator();
+            CreateAdditionalDecorators();
+            _mcSymmetric.Initialize(ct);
+            _mcSigning.Initialize(ct);
         }
 
-        private void CreateSymmetricDecorator() {
+        private void CreateAdditionalDecorators() {
             _mcSymmetric = new SymmetricEncryptionDecorator(_mcAsymmetric, false, new Cryptography.XChaCha20Poly1305Cipher(), _mcAsymmetric.SymmetricKey);
+            _mcSigning = new SigningChallengeDecorator(_mcSymmetric, false, new Cryptography.RFC8032Algorithm(), _arrConnectionKey);
         }
 
         public byte[] ReceiveMesssage() => Frontend.ReceiveMesssage();

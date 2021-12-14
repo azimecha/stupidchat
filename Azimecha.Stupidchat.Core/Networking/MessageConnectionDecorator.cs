@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Azimecha.Stupidchat.Core.Networking {
     public class MessageConnectionDecorator : IMessageConnection {
@@ -33,5 +34,19 @@ namespace Azimecha.Stupidchat.Core.Networking {
 
         public virtual void Initialize() => _connInner.Initialize();
         public virtual void Initialize(CancellationToken ct) => _connInner.Initialize(ct);
+
+        // Sends and receives "at the same time"
+        public static byte[] Exchange(IMessageConnection conn, byte[] arrSend, int nTimeout = int.MaxValue, CancellationToken? ct = null) {
+            Task taskSend = Task.Run(() => conn.SendMessage(arrSend));
+            Task<byte[]> taskRecv = Task.Run(() => ct.HasValue ? conn.ReceiveMesssage(ct.Value) : conn.ReceiveMesssage());
+
+            taskSend.Wait(nTimeout);
+            taskRecv.Wait(nTimeout);
+
+            taskSend.CheckFinished();
+            taskRecv.CheckFinished();
+
+            return taskRecv.Result;
+        }
     }
 }

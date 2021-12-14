@@ -12,9 +12,16 @@ namespace Azimecha.Stupidchat.Core.Structures {
     }
 
     [DataContract]
-    public struct Message {
+    public struct MessageData {
         [DataMember] public long ID;
-        [DataMember] public byte[] SenderID;
+        [DataMember] public byte[] SenderPublicSigningKey;
+        [DataMember] public long PostedTime;
+        [DataMember] public byte[] SignedData; // MessageSignedData object
+        [DataMember] public byte[] Signature;
+    }
+
+    [DataContract]
+    public struct MessageSignedData {
         [DataMember] public string Text;
         [DataMember] public long SendTime;
         [DataMember] public string AttachmentURL;
@@ -26,6 +33,7 @@ namespace Azimecha.Stupidchat.Core.Structures {
         [DataMember] public string DisplayName;
         [DataMember] public string Bio;
         [DataMember] public string AvatarURL;
+        [DataMember] public long UpdateTime;
     }
 
     public enum ChannelType {
@@ -49,10 +57,10 @@ namespace Azimecha.Stupidchat.Core.Structures {
 
     [DataContract]
     public struct MemberInfo {
-        [DataMember] public byte[] UserID;
+        [DataMember] public byte[] PublicKey;
         [DataMember] public string Nickname;
         [DataMember] public PowerLevel Power;
-        [DataMember] public string Profile; // Serialized UserProfile object
+        [DataMember] public byte[] Profile; // UserProfile object
         [DataMember] public byte[] ProfileSignature;
     }
 }
