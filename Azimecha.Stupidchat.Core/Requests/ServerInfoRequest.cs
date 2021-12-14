@@ -10,6 +10,6 @@ namespace Azimecha.Stupidchat.Core.Requests {
 
     [DataContract]
     public class ServerInfoResponse : Protocol.ResponseMessage {
-        [DataMember] public ServerInformation Info;
+        [DataMember] public ServerInfo Info;
     }
 }

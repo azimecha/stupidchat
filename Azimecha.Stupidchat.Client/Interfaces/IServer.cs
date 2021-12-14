@@ -7,8 +7,10 @@ namespace Azimecha.Stupidchat.Client.Interfaces {
     public interface IServer {
         string Address { get; }
         int Port { get; }
-        ReadOnlySpan<byte> PublicKey { get; }
+        ReadOnlySpan<byte> ID { get; }
 
-        ServerInformation GetInformation();
+        ServerInfo GetInformation();
+        IMember[] GetMembers();
+        IChannel[] GetChannels();
     }
 }

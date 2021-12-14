@@ -106,5 +106,14 @@ namespace Azimecha.Stupidchat.Core {
                 nSize--;
             }
         }
+
+        public static string ToHexString(this ReadOnlySpan<byte> spanBytes) {
+            string str = "";
+
+            foreach (byte nCurVal in spanBytes)
+                str += nCurVal.ToString("X2");
+
+            return str;
+        }
     }
 }
