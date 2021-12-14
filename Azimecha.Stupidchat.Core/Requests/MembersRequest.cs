@@ -10,6 +10,6 @@ namespace Azimecha.Stupidchat.Core.Requests {
 
     [DataContract]
     public class MembersResponse : Protocol.ResponseMessage {
-        [DataMember] public byte[][] MemberIDs;
+        [DataMember] public MemberInfo[] Members;
     }
 }

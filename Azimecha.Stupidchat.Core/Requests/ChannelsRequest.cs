@@ -10,6 +10,6 @@ namespace Azimecha.Stupidchat.Core.Requests {
 
     [DataContract]
     public class ChannelsResponse : Protocol.ResponseMessage {
-        [DataMember] public long[] ChannelIDs;
+        [DataMember] public ChannelInfo[] Channels;
     }
 }

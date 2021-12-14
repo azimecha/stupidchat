@@ -6,6 +6,8 @@ using System.Linq;
 using Azimecha.Stupidchat.Core;
 using Azimecha.Stupidchat.Core.Structures;
 using System.Threading;
+using System.Collections;
+using Azimecha.Stupidchat.Core.Requests;
 
 namespace Azimecha.Stupidchat.Client {
     public class ChatClient : IDisposable {
@@ -72,20 +74,19 @@ namespace Azimecha.Stupidchat.Client {
                     _dicUsers.Add(strID, userNew);
             }
 
-            if (!(userExisting is null)) {
-                if (userExisting.Profile.UpdateTime < profile.UpdateTime)
-                    userExisting.UpdateProfile(profile);
-            }
-
+            userExisting?.UpdateProfile(profile);
             return userExisting ?? userNew;
         }
 
-        private string IDToString(ReadOnlySpan<byte> spanKey) => spanKey.ToHexString();
+        private static string IDToString(ReadOnlySpan<byte> spanKey) => spanKey.ToHexString();
 
         private class Server : IServer, IDisposable, ProtocolConnection.IErrorProcessor, ProtocolConnection.INotificationProcessor {
             private ChatClient _cclient;
             private ProtocolConnection _conn;
-            private IDictionary<long, Member> _dicMembers;
+            private IDictionary<string, Member> _dicMembers;
+            private IDictionary<long, Channel> _dicChannels;
+            private ServerInfo _info;
+            private object _objInfoMutex;
 
             internal Server(ChatClient cclient, string strAddress, int nPort, ReadOnlySpan<byte> spanPrivateKey) {
                 _cclient = cclient;
@@ -103,13 +104,29 @@ namespace Azimecha.Stupidchat.Client {
                     throw;
                 }
 
-                _dicMembers = new Dictionary<long, Member>();
+                _info = _conn.PerformRequest<ServerInfoResponse>(new ServerInfoRequest()).Info;
+                _objInfoMutex = new object();
+
+                _dicMembers = new Dictionary<string, Member>();
+                foreach (MemberInfo infoMember in _conn.PerformRequest<MembersResponse>(new MembersRequest()).Members)
+                    _dicMembers.Add(IDToString(infoMember.PublicKey), new Member(this, infoMember));
+
+                _dicChannels = new Dictionary<long, Channel>();
+                foreach (ChannelInfo infoChannel in _conn.PerformRequest<ChannelsResponse>(new ChannelsRequest()).Channels)
+                    _dicChannels.Add(infoChannel.ID, new Channel(this, infoChannel));
             }
 
             public string Address { get; private set; }
             public int Port { get; private set; }
             public ReadOnlySpan<byte> ID => _conn.PartnerPublicKey;
-            public ServerInfo Info { get; private set; }
+
+            public ServerInfo Info {
+                get {
+                    lock (_objInfoMutex)
+                        return _info;
+                }
+            }
+
             public IEnumerable<IMember> Members => _dicMembers.Values;
             public IEnumerable<IChannel> Channels => throw new NotImplementedException();
 
@@ -121,7 +138,7 @@ namespace Azimecha.Stupidchat.Client {
             }
 
             void ProtocolConnection.IErrorProcessor.ProcessError(Exception ex) {
-                throw new NotImplementedException();
+
             }
 
             void ProtocolConnection.INotificationProcessor.ProcessNotification(Core.Protocol.NotificationMessage msgNotification) {
@@ -143,8 +160,10 @@ namespace Azimecha.Stupidchat.Client {
             }
 
             internal void UpdateInfo(MemberInfo info) {
+                UserProfile profile = SignedStructSerializer.Deserialize<UserProfile>(info.Profile, info.ProfileSignature, info.PublicKey);
+
                 lock (_objInfoMutex) {
-                    _user = _server.AssociatedChatClient.MemberToUser(info);
+                    _user.UpdateProfile(profile);
                     _info = info;
                 }
             }
@@ -218,8 +237,10 @@ namespace Azimecha.Stupidchat.Client {
             }
 
             internal void UpdateProfile(UserProfile profile) {
-                lock (_objProfileMutex)
-                    _profile = profile;
+                lock (_objProfileMutex) {
+                    if (profile.UpdateTime < _profile.UpdateTime)
+                        _profile = profile;
+                }
             }
 
             public IEnumerable<IMember> Memberships {

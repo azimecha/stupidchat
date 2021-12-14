@@ -21,4 +21,8 @@
     <ProjectReference Include="..\Azimecha.Stupidchat.Server\Azimecha.Stupidchat.Server.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Events\" />
+  </ItemGroup>
+
 </Project>
