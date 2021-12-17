@@ -115,5 +115,24 @@ namespace Azimecha.Stupidchat.Core {
 
             return str;
         }
+
+        // https://stackoverflow.com/questions/13042045/interlocked-compareexchangeint-using-greaterthan-or-lessthan-instead-of-equali
+        public static bool InterlockedExchangeIfGreater(ref int nValue, int nCompareTo, int nReplaceWith) {
+            int nInitialValue;
+            do {
+                nInitialValue = nValue;
+                if (nInitialValue >= nCompareTo) return false;
+            } while (Interlocked.CompareExchange(ref nValue, nReplaceWith, nInitialValue) != nInitialValue);
+            return true;
+        }
+
+        public static bool InterlockedExchangeIfGreater(ref long nValue, long nCompareTo, long nReplaceWith) {
+            long nInitialValue;
+            do {
+                nInitialValue = nValue;
+                if (nInitialValue >= nCompareTo) return false;
+            } while (Interlocked.CompareExchange(ref nValue, nReplaceWith, nInitialValue) != nInitialValue);
+            return true;
+        }
     }
 }

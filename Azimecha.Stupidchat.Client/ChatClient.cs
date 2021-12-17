@@ -8,6 +8,8 @@ using Azimecha.Stupidchat.Core.Structures;
 using System.Threading;
 using System.Collections;
 using Azimecha.Stupidchat.Core.Requests;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Azimecha.Stupidchat.Client {
     public class ChatClient : IDisposable {
@@ -131,6 +133,7 @@ namespace Azimecha.Stupidchat.Client {
             public IEnumerable<IChannel> Channels => throw new NotImplementedException();
 
             internal ChatClient AssociatedChatClient => _cclient;
+            internal ProtocolConnection Connection => _conn;
 
             public void Dispose() {
                 Interlocked.Exchange(ref _conn, null)?.Dispose();
@@ -183,12 +186,15 @@ namespace Azimecha.Stupidchat.Client {
         private class Channel : IChannel {
             private Server _server;
             private ChannelInfo _info;
-            private object _objChannelMutex;
+            private object _objChannelMutex, _objDownloadMessagesMutex;
+            private ConcurrentDictionary<long, IMessage> _dicMessages;
+            private long _nHighestMessageIndex;
 
             internal Channel(Server server, ChannelInfo info) {
                 _server = server;
                 _info = info;
                 _objChannelMutex = new object();
+                _dicMessages = new ConcurrentDictionary<long, IMessage>();
             }
 
             internal void UpdateInfo(ChannelInfo info) {
@@ -205,8 +211,80 @@ namespace Azimecha.Stupidchat.Client {
                 }
             }
 
-            // TODO
-            public IEnumerable<IMessage> Messages { get; }
+            internal IMessage TryGetMessage(long nIndex) {
+                IMessage msg;
+
+                // check to see if it's already downloaded
+                if (_dicMessages.TryGetValue(nIndex, out msg))
+                    return msg;
+
+                // acquire the lock.  not needed for the dictionary -
+                // just prevents us from downloading twice concurrently
+                lock (_objDownloadMessagesMutex) {
+                    // check to see if the last locker got it
+                    if (_dicMessages.TryGetValue(nIndex, out msg))
+                        return msg;
+
+                    // download it
+                    SingleMessageResponse resp = _server.Connection.PerformRequest<SingleMessageResponse>(new SingleMessageRequest() { Index = nIndex });
+                    msg = CreateMessageObject(this, nIndex, resp.Message);
+
+                    // try to put it in
+                    if (_dicMessages.TryAdd(nIndex, msg)) {
+                        // update highest message index if needed
+                        Utils.InterlockedExchangeIfGreater(ref _nHighestMessageIndex, nIndex, nIndex);
+                        return msg;
+                    }
+                        
+                    // lock will release on exiting this block
+                }
+
+                // someone else put it in? (shouldn't happen)
+                if (_dicMessages.TryGetValue(nIndex, out msg))
+                    return msg;
+
+                // we really shouldn't be here
+                throw new InvalidOperationException($"Message {nIndex} is both present and not present in the dictionary (could not add or get)");
+            }
+
+            public IEnumerable<IMessage> Messages => new MessageEnumerable(this);
+
+            private class MessageEnumerable : IEnumerable<IMessage> {
+                private Channel _chan;
+                public MessageEnumerable(Channel chan) { _chan = chan; }
+
+                public IEnumerator<IMessage> GetEnumerator() => new MessageEnumerator(_chan);
+                IEnumerator IEnumerable.GetEnumerator() => new MessageEnumerator(_chan);
+            }
+
+            // note that messages are enumerated backwards in time, starting from the newest message
+            private class MessageEnumerator : IEnumerator<IMessage> {
+                private Channel _chan;
+                private long _nCurIndex;
+                private IMessage _msgCurrent;
+
+                public MessageEnumerator(Channel chan) { _chan = chan; }
+
+                public IMessage Current => throw new NotImplementedException();
+                object IEnumerator.Current => throw new NotImplementedException();
+
+                public void Dispose() {
+                    _chan = null;
+                    _nCurIndex = -1;
+                    _msgCurrent = null;
+                }
+
+                public bool MoveNext() {
+                    _nCurIndex = _nCurIndex < 0 ? _chan._nHighestMessageIndex : _nCurIndex - 1;
+                    _msgCurrent = _chan.TryGetMessage(_nCurIndex);
+                    return !(_msgCurrent is null);
+                }
+
+                public void Reset() {
+                    _nCurIndex = -1;
+                    _msgCurrent = null;
+                }
+            }
 
             public void PostMessage(MessageSignedData msg) {
                 throw new NotImplementedException();
@@ -258,6 +336,44 @@ namespace Azimecha.Stupidchat.Client {
                         return _profile;
                 }
             }
+        }
+
+        private static IMessage CreateMessageObject(Channel chan, long nIndex, MessageData? data)
+            => data.HasValue ? (IMessage)new Message(chan, nIndex, data.Value) : (IMessage)new MissingMessage(chan, nIndex);
+
+        private class Message : IMessage {
+            private Channel _chan;
+            private long _nIndex;
+            private MessageData _data;
+            private Member _membSender;
+
+            public Message(Channel chan, long nIndex, MessageData data) {
+                _chan = chan;
+                _nIndex = nIndex;
+                _data = data;
+
+                _membSender = (Member)chan.Server.Members.Where(m => m.User.PublicKey.SequenceEqual(data.SenderPublicSigningKey)).FirstOrDefault();
+            }
+
+            public IChannel Channel => _chan;
+            public IMember Sender => _membSender;
+            public bool Deleted => false;
+            public MessageData Data => _data;
+        }
+
+        private class MissingMessage : IMessage {
+            private Channel _chan;
+            private long _nIndex;
+
+            public MissingMessage(Channel chan, long nIndex) {
+                _chan = chan;
+                _nIndex = nIndex;
+            }
+
+            public IChannel Channel => _chan;
+            public IMember Sender => null;
+            public bool Deleted => true;
+            public MessageData Data => new MessageData();
         }
     }
 }
