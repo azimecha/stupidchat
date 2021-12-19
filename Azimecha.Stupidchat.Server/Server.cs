@@ -166,6 +166,9 @@ namespace Azimecha.Stupidchat.Server {
         public IEnumerable<Core.Structures.MemberInfo> Members
             => Database.Table<Records.MemberRecord>().Select(memb => memb.ToMemberInfo());
 
+        public long GetMemberID(Core.Structures.MemberInfo infMember)
+            => Database.Table<Records.MemberRecord>().Where(memb => memb.PublicKey.SequenceEqual(infMember.PublicKey)).First().MemberID;
+
         internal ReadOnlySpan<byte> PrivateKey => _arrPrivateKey;
         internal SQLite.SQLiteConnection Database => _tllConnections.Value;
 
