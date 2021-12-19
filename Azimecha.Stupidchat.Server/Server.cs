@@ -23,6 +23,7 @@ namespace Azimecha.Stupidchat.Server {
         private ThreadLocalLazy<SQLite.SQLiteConnection> _tllConnections;
         private string _strDatabasePath;
         private object _objInfoMutex;
+        private bool _bStopRequested;
 
         public Server(ReadOnlySpan<byte> spanPrivateKey, IPEndPoint endpointListenOn, Core.Structures.ServerInfo info, string strDatabasePath) {
             _dicConnections = new ConcurrentDictionary<string, ClientConnection>();
@@ -48,9 +49,10 @@ namespace Azimecha.Stupidchat.Server {
         }
 
         public void Dispose() {
+            _bStopRequested = true;
+
             CancellationTokenSource ctsDisposing = Interlocked.Exchange(ref _ctsDisposing, null);
             _ctsDisposing?.Cancel();
-            _ctsDisposing?.Dispose();
 
             ConcurrentDictionary<string, ClientConnection> dicConnections = Interlocked.Exchange(ref _dicConnections, null);
             if (!(dicConnections is null)) {
@@ -58,10 +60,20 @@ namespace Azimecha.Stupidchat.Server {
                     conn.Dispose();
             }
 
+            try { Interlocked.Exchange(ref _listener, null)?.Stop(); } catch (Exception) { }
+            Interlocked.Exchange(ref _tllConnections, null)?.Dispose();
+
             _arrPrivateKey = null;
+
+            _thdServer?.Join(1000);
+            _ctsDisposing?.Dispose();
         }
 
-        public static ILogListener LogListener { get; set; }
+        private static ILogListener _log = new DebugLogListener();
+        public static ILogListener LogListener {
+            get => _log;
+            set => _log = value;
+        }
 
         public Core.Structures.ServerInfo BasicInfo {
             get {
@@ -157,7 +169,8 @@ namespace Azimecha.Stupidchat.Server {
         internal ReadOnlySpan<byte> PrivateKey => _arrPrivateKey;
         internal SQLite.SQLiteConnection Database => _tllConnections.Value;
 
-        private SQLite.SQLiteConnection ConnectToDatabase() => new SQLite.SQLiteConnection(_strDatabasePath);
+        private SQLite.SQLiteConnection ConnectToDatabase() => new SQLite.SQLiteConnection(_strDatabasePath, 
+            SQLite.SQLiteOpenFlags.ReadWrite | SQLite.SQLiteOpenFlags.Create);
 
         private void InitDatabase() {
             SQLite.SQLiteConnection db = Database;
@@ -244,14 +257,13 @@ namespace Azimecha.Stupidchat.Server {
                 try {
                     Task<TcpClient> taskAccept = listener.AcceptTcpClientAsync();
                     taskAccept.Wait(ctDisposing);
-
-                    if (ctDisposing.IsCancellationRequested) {
-                        LogListener.LogMessage($"Server thread exiting");
+                    weakServer.GetValue()?.AcceptConnection(taskAccept.Result);
+                } catch (Exception ex) {
+                    if (weakServer.GetValue()?._bStopRequested ?? true) {
+                        LogListener.LogMessage($"Server thread exiting due to cancellation. Exception was: {ex}");
                         return;
                     }
 
-                    weakServer.GetValue()?.AcceptConnection(taskAccept.Result);
-                } catch (Exception ex) {
                     try {
                         weakServer.GetValue().HandleServerThreadError(ex);
                     } catch (Exception ex2) {
