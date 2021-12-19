@@ -10,6 +10,13 @@ namespace Azimecha.Stupidchat.Server.Records {
         public string Name { get; set; }
         public string Description { get; set; }
         public Core.Structures.ChannelType Type { get; set; }
+
+        public Core.Structures.ChannelInfo ToChannelInfo() => new Core.Structures.ChannelInfo() {
+            Description = Description,
+            ID = ID,
+            Name = Name,
+            Type = Type
+        };
     }
 
     public class MessageRecord {
@@ -21,6 +28,14 @@ namespace Azimecha.Stupidchat.Server.Records {
         public DateTime DatePosted { get; set; }
         public byte[] SignedData { get; set; }
         public byte[] Signature;
+
+        public Core.Structures.MessageData ToMessageData() => new Core.Structures.MessageData() {
+            ID = MessageIndex,
+            PostedTime = DatePosted.Ticks,
+            Signature = Signature,
+            SignedData = SignedData,
+            SenderPublicSigningKey = SenderPublicKey
+        };
     }
 
     public class MemberRecord {
@@ -31,5 +46,13 @@ namespace Azimecha.Stupidchat.Server.Records {
         public Core.Structures.PowerLevel Power;
         public byte[] SignedProfile;
         public byte[] ProfileSignature;
+
+        public Core.Structures.MemberInfo ToMemberInfo() => new Core.Structures.MemberInfo {
+            Nickname = Nickname,
+            Power = Power,
+            Profile = SignedProfile,
+            ProfileSignature = ProfileSignature,
+            PublicKey = PublicKey
+        };
     }
 }

@@ -338,6 +338,7 @@ namespace Azimecha.Stupidchat.Client {
                 _server = server;
                 _info = info;
                 _objChannelMutex = new object();
+                _objDownloadMessagesMutex = new object();
                 _dicMessages = new ConcurrentDictionary<long, IMessage>();
             }
 

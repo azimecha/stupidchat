@@ -43,5 +43,18 @@ namespace Azimecha.Stupidchat.Core {
 
             return dicBound;
         }
+
+        public static IDictionary<Type, Func<TToProcess, TResult>> BindProcessorsList<TProcessorClass, TToProcess, TResult>
+            (TProcessorClass objBindTo, IDictionary<Type, MethodInfo> dicProcessors) {
+            IDictionary<Type, Func<TToProcess, TResult>> dicBound = new Dictionary<Type, Func<TToProcess, TResult>>();
+
+            foreach (KeyValuePair<Type, MethodInfo> kvp in dicProcessors) {
+                Delegate procTakesDerived = kvp.Value.CreateDelegate(typeof(Func<,>).MakeGenericType(kvp.Key, kvp.Value.ReturnType), objBindTo);
+                Func<TToProcess, TResult> procTakesBase = (TToProcess obj) => (TResult)procTakesDerived.DynamicInvoke(obj);
+                dicBound.Add(kvp.Key, procTakesBase);
+            }
+
+            return dicBound;
+        }
     }
 }

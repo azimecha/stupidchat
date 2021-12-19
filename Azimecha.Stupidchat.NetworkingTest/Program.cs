@@ -21,10 +21,11 @@ namespace Azimecha.Stupidchat.NetworkingTest {
         }
 
         private static readonly object _objConsoleMutex = new object();
+        private static readonly int _nPrivateKeySize = Core.NetworkConnection.CreateSigningAlgorithmInstance().PrivateKeySize;
 
         private static void ServerThread() {
             Random rand = new Random(1);
-            byte[] arrPrivateKey = new byte[Core.NetworkConnection.PrivateKeySize];
+            byte[] arrPrivateKey = new byte[_nPrivateKeySize];
             rand.NextBytes(arrPrivateKey);
 
             TcpListener listener = new TcpListener(IPAddress.Loopback, 22200);
@@ -41,7 +42,7 @@ namespace Azimecha.Stupidchat.NetworkingTest {
 
         private static void ClientThread() {
             Random rand = new Random(2);
-            byte[] arrPrivateKey = new byte[Core.NetworkConnection.PrivateKeySize];
+            byte[] arrPrivateKey = new byte[_nPrivateKeySize];
             rand.NextBytes(arrPrivateKey);
 
             TcpClient client = new TcpClient();

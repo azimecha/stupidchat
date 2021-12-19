@@ -6,18 +6,16 @@ using System.Threading;
 
 namespace Azimecha.Stupidchat.Server {
     public class ThreadLocalLazy<T> : IDisposable {
-        private ConcurrentDictionary<Thread, T> _dicInstances;
-        private ConcurrentDictionary<Thread, ThreadExitCallback> _dicCallbacks;
+        private Dictionary<Thread, Instance> _dicInstances;
         private Func<T> _procFactory;
         private Action<T> _procDisposer;
-        private ConcurrentBag<Thread> _bagThreads;
 
         public ThreadLocalLazy() : this(DefaultFactory, DefaultDisposer) {}
         public ThreadLocalLazy(Func<T> procFactory) : this(procFactory, DefaultDisposer) {}
         public ThreadLocalLazy(Action<T> procDisposer) : this(DefaultFactory, procDisposer) { }
 
         public ThreadLocalLazy(Func<T> procFactory, Action<T> procDisposer) {
-            _dicInstances = new ConcurrentDictionary<Thread, T>();
+            _dicInstances = new Dictionary<Thread, Instance>();
             _procFactory = procFactory;
             _procDisposer = procDisposer;
         }
@@ -26,56 +24,57 @@ namespace Azimecha.Stupidchat.Server {
         private static void DefaultDisposer(T obj) => (obj as IDisposable)?.Dispose();
 
         public void Dispose() {
-            Thread thdCur;
-
-            while (_bagThreads.TryTake(out thdCur)) {
-                T obj;
-
-                if (_dicInstances.TryRemove(thdCur, out obj))
-                    _procDisposer(obj);
+            lock (_dicInstances) {
+                foreach (KeyValuePair<Thread, Instance> kvpInst in _dicInstances)
+                    kvpInst.Value.Dispose();
+                _dicInstances.Clear();
             }
         }
 
         public T Value {
             get {
+                Instance inst;
                 Thread thdCur = Thread.CurrentThread;
-                T obj;
-                ThreadExitCallback callback = null;
 
-                if (_dicInstances.TryGetValue(thdCur, out obj))
-                    return obj;
-
-                obj = _procFactory();
-
-                try {
-                    callback = new ThreadExitCallback(thdCur, thd => DiscardSpecific(thdCur));
-
-                    if (!_dicInstances.TryAdd(thdCur, obj))
-                        throw new InvalidOperationException("Could not get or add value - did another thread use our thead object?");
-
-                    if (!_dicCallbacks.TryAdd(thdCur, callback))
-                        throw new InvalidOperationException("Could not get or add value - did another thread use our thead object?");
-
-                } catch (Exception ex) {
-                    T objDummy;
-                    _dicInstances.TryRemove(thdCur, out objDummy);
-
-                    _procDisposer(obj);
-                    callback?.Dispose();
-                    throw;
+                lock (_dicInstances) {
+                    if (_dicInstances.TryGetValue(thdCur, out inst))
+                        return inst.Object;
                 }
 
+                // no race condition: no other thread is the same as this Thread.CurrentThread
+                inst = new Instance(this);
+                
+                lock (_dicInstances)
+                    _dicInstances.Add(thdCur, inst);
 
-                return obj;
+                return inst.Object;
             }
         }
 
         public void DiscardMine() => DiscardSpecific(Thread.CurrentThread);
 
         private void DiscardSpecific(Thread thd) {
-            T obj;
-            if (_dicInstances.TryRemove(thd, out obj))
-                _procDisposer(obj);
+            lock (_dicInstances) {
+                Instance inst;
+                if (_dicInstances.TryGetValue(thd, out inst))
+                    inst.Dispose();
+            }
+        }
+
+        private class Instance : IDisposable {
+            private Action<T> _procDisposer;
+            private T _object;
+
+            public Instance(ThreadLocalLazy<T> lazy) {
+                _object = lazy._procFactory();
+                _procDisposer = lazy._procDisposer;
+            }
+
+            public T Object => _object;
+
+            public void Dispose() {
+                _procDisposer(_object);
+            }
         }
     }
 }

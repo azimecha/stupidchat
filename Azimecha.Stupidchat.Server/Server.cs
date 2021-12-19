@@ -7,6 +7,7 @@ using System.Threading;
 using Azimecha.Stupidchat.Core.Protocol;
 using System.Diagnostics;
 using System.Net;
+using System.Linq;
 using Azimecha.Stupidchat.Core;
 using System.Threading.Tasks;
 
@@ -19,13 +20,20 @@ namespace Azimecha.Stupidchat.Server {
         private TaskCompletionSource<int> _tcsServerStart;
         private Thread _thdServer;
         private Core.Structures.ServerInfo _info;
-        private ConcurrentDictionary<Thread, SQLite.SQLiteConnection> _dicDBConnections;
+        private ThreadLocalLazy<SQLite.SQLiteConnection> _tllConnections;
+        private string _strDatabasePath;
 
         public Server(ReadOnlySpan<byte> spanPrivateKey, IPEndPoint endpointListenOn, Core.Structures.ServerInfo info, string strDatabasePath) {
             _dicConnections = new ConcurrentDictionary<string, ClientConnection>();
             _listener = new TcpListener(endpointListenOn);
             _ctsDisposing = new CancellationTokenSource();
             _info = info;
+
+            _dicRequestProcessors = ProcessorAttribute.BindProcessorsList<Server, RequestMessage, ResponseMessage>(this, _dicRequestProcessorMethods);
+
+            _strDatabasePath = strDatabasePath;
+            _tllConnections = new ThreadLocalLazy<SQLite.SQLiteConnection>(ConnectToDatabase);
+            InitDatabase();
 
             _tcsServerStart = new TaskCompletionSource<int>();
             Task<int> taskServerStart = _tcsServerStart.Task;
@@ -52,17 +60,15 @@ namespace Azimecha.Stupidchat.Server {
         }
 
         internal ReadOnlySpan<byte> PrivateKey => _arrPrivateKey;
+        internal SQLite.SQLiteConnection Database => _tllConnections.Value;
 
-        internal SQLite.SQLiteConnection Database {
-            get {
-
-            }
-        }
+        private SQLite.SQLiteConnection ConnectToDatabase() => new SQLite.SQLiteConnection(_strDatabasePath);
 
         private void InitDatabase() {
-            _db.CreateTable<Records.ChannelRecord>();
-            _db.CreateTable<Records.MemberRecord>();
-            _db.CreateTable<Records.MessageRecord>();
+            SQLite.SQLiteConnection db = Database;
+            db.CreateTable<Records.ChannelRecord>();
+            db.CreateTable<Records.MemberRecord>();
+            db.CreateTable<Records.MessageRecord>();
         }
 
         private void AcceptConnection(TcpClient client) {
@@ -83,7 +89,23 @@ namespace Azimecha.Stupidchat.Server {
         }
 
         private void NewUserCheck(ClientConnection conn) {
-            _db.b
+            byte[] arrPartnerPublicKey = conn.Connection.PartnerPublicKey.ToArray();
+
+            SQLite.SQLiteConnection db = Database;
+            Records.MemberRecord member;
+
+            db.RunInTransaction(() => {
+                member = db.Table<Records.MemberRecord>().Where(m => m.PublicKey.SequenceEqual(arrPartnerPublicKey)).FirstOrDefault();
+                if (member is null) {
+                    member = new Records.MemberRecord() { PublicKey = arrPartnerPublicKey };
+                    db.Insert(member);
+                }
+            });
+        }
+
+        private void BroadcastNotification(NotificationMessage msgNotification) {
+            lock (_dicConnections)
+                _dicConnections.Values.AsParallel().ForAll(conn => conn.Connection.SendNotification(msgNotification));
         }
 
         private void HandleServerThreadError(Exception ex) {
@@ -137,5 +159,52 @@ namespace Azimecha.Stupidchat.Server {
                 }
             }
         }
+
+        private static readonly IDictionary<Type, System.Reflection.MethodInfo> _dicRequestProcessorMethods
+            = ProcessorAttribute.BuildProcessorsList<Server, RequestMessage>();
+
+        private readonly IDictionary<Type, Func<RequestMessage, ResponseMessage>> _dicRequestProcessors;
+
+        internal ResponseMessage HandleRequest(ClientConnection conn, RequestMessage msgRequest) {
+            Type typeRequest = msgRequest.GetType();
+            Func<RequestMessage, ResponseMessage> procHandler;
+
+            if (_dicRequestProcessors.TryGetValue(typeRequest, out procHandler))
+                return procHandler(msgRequest);
+
+            throw new NoHandlerException($"No request handler for {typeRequest.FullName}");
+        }
+
+        [Processor(typeof(Core.Requests.ChannelsRequest))]
+        private Core.Requests.ChannelsResponse HandleChannelsRequest(Core.Requests.ChannelsRequest req) => new Core.Requests.ChannelsResponse() { 
+            Channels = Database.Table<Records.ChannelRecord>()
+                .Select(chan => chan.ToChannelInfo())
+                .ToArray() 
+        };
+
+        [Processor(typeof(Core.Requests.MembersRequest))]
+        private Core.Requests.MembersResponse HandleMembersRequest(Core.Requests.MembersRequest req) => new Core.Requests.MembersResponse() {
+            Members = Database.Table<Records.MemberRecord>()
+                .Select(memb => memb.ToMemberInfo())
+                .ToArray()
+        };
+
+        [Processor(typeof(Core.Requests.MessagesBeforeRequest))]
+        private Core.Requests.MessagesBeforeResponse HandleMessagesBeforeRequest(Core.Requests.MessagesBeforeRequest req) => new Core.Requests.MessagesBeforeResponse() {
+            Messages = Database.Table<Records.MessageRecord>()
+                .Where(msg => msg.ChannelID == req.InChannel && msg.MessageIndex < req.BeforeIndex)
+                .OrderByDescending(msg => -msg.MessageIndex)
+                .Take(req.MaxCount)
+                .Select(msg => msg.ToMessageData())
+                .ToArray()
+        };
+
+        [Processor(typeof(Core.Requests.SingleMessageRequest))]
+        private Core.Requests.SingleMessageResponse HandleSingleMessageRequest(Core.Requests.SingleMessageRequest req) => new Core.Requests.SingleMessageResponse() {
+            Message = Database.Table<Records.MessageRecord>()
+                .Where(msg => msg.ChannelID == req.Channel && msg.MessageIndex == req.Index)
+                .FirstOrDefault()
+                ?.ToMessageData()
+        };
     }
 }

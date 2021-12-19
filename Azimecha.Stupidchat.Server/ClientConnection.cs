@@ -28,8 +28,7 @@ namespace Azimecha.Stupidchat.Server {
             Console.WriteLine($"Client connection error: {ex}");
         }
 
-        ResponseMessage Core.ProtocolConnection.IRequestProcessor.ProcessRequest(RequestMessage msgRequest) {
-            throw new NotImplementedException();
-        }
+        ResponseMessage Core.ProtocolConnection.IRequestProcessor.ProcessRequest(RequestMessage msgRequest) 
+            => _server.HandleRequest(this, msgRequest);
     }
 }

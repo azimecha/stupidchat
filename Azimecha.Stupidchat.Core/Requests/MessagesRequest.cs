@@ -8,7 +8,8 @@ namespace Azimecha.Stupidchat.Core.Requests {
     [DataContract]
     public class MessagesBeforeRequest : Protocol.RequestMessage {
         [DataMember] public int MaxCount;
-        [DataMember] public long Before;
+        [DataMember] public long BeforeIndex;
+        [DataMember] public long InChannel;
     }
 
     [DataContract]
@@ -18,6 +19,7 @@ namespace Azimecha.Stupidchat.Core.Requests {
 
     [DataContract]
     public class SingleMessageRequest : Protocol.RequestMessage {
+        [DataMember] public long Channel;
         [DataMember] public long Index;
     }
 

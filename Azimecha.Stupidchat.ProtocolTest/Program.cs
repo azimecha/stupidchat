@@ -32,10 +32,11 @@ namespace Azimecha.Stupidchat.NetworkingTest {
 
         private static readonly object _objConsoleMutex = new object();
         private static CancellationToken _ctStop;
+        private static readonly int _nPrivateKeySize = Core.NetworkConnection.CreateSigningAlgorithmInstance().PrivateKeySize;
 
         private static void ServerThread() {
             Random rand = new Random(1);
-            byte[] arrPrivateKey = new byte[Core.NetworkConnection.PrivateKeySize];
+            byte[] arrPrivateKey = new byte[_nPrivateKeySize];
             rand.NextBytes(arrPrivateKey);
 
             Core.ProtocolConnection.IRequestProcessor rp = new ServerRequestProcessor();
@@ -60,7 +61,7 @@ namespace Azimecha.Stupidchat.NetworkingTest {
 
         private static void ClientThread() {
             Random rand = new Random(2);
-            byte[] arrPrivateKey = new byte[Core.NetworkConnection.PrivateKeySize];
+            byte[] arrPrivateKey = new byte[_nPrivateKeySize];
             rand.NextBytes(arrPrivateKey);
 
             Core.ProtocolConnection.INotificationProcessor np = new ClientNotifProcessor();
