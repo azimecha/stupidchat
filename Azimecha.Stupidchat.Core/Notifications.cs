@@ -6,6 +6,11 @@ using Azimecha.Stupidchat.Core.Structures;
 
 namespace Azimecha.Stupidchat.Core.Notifications {
     [DataContract]
+    public class ServerInfoChangedNotification : Protocol.NotificationMessage {
+        [DataMember] public ServerInfo Info;
+    }
+
+    [DataContract]
     public class MemberJoinedNotification : Protocol.NotificationMessage {
         [DataMember] public MemberInfo Member;
     }

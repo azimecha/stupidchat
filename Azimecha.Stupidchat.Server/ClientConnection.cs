@@ -25,7 +25,7 @@ namespace Azimecha.Stupidchat.Server {
         }
 
         void Core.ProtocolConnection.IErrorProcessor.ProcessError(Exception ex) {
-            Console.WriteLine($"Client connection error: {ex}");
+            Server.LogListener.LogMessage($"Client connection error: {ex}");
         }
 
         ResponseMessage Core.ProtocolConnection.IRequestProcessor.ProcessRequest(RequestMessage msgRequest) 
