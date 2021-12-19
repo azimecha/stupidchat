@@ -33,6 +33,12 @@ namespace Azimecha.Stupidchat.Core.Protocol {
     }
 
     [DataContract]
+    public class ErrorNotification : NotificationMessage {
+        [DataMember] public string Summary;
+        [DataMember] public string Description;
+    }
+
+    [DataContract]
     public class MessageContainer {
         [DataMember] public long SentAt;
         [DataMember] public string MessageType;

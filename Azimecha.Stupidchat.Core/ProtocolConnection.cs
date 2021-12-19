@@ -75,6 +75,9 @@ namespace Azimecha.Stupidchat.Core {
             _conn.SendMessage(Encoding.UTF8.GetBytes(msgNotif.Serialize()));
         }
 
+        public void SendErrorNotification(Exception ex)
+            => SendNotification(new Protocol.ErrorNotification() { Summary = ex.Message, Description = ex.ToString() });
+
         public void Dispose() {
             _ctsDisposed.Cancel();
             Interlocked.Exchange(ref _conn, null)?.Dispose();
@@ -195,6 +198,16 @@ namespace Azimecha.Stupidchat.Core {
         }
 
         private void ProcessNotification(Protocol.NotificationMessage msgNotification) {
+            if (msgNotification is Protocol.ErrorNotification) {
+                IErrorProcessor cbError = ErrorProcessor;
+
+                if (cbError is null)
+                    throw new NoHandlerException("No error processor for error notification");
+
+                cbError.ProcessError(new SpontaneousRemoteException((Protocol.ErrorNotification)msgNotification));
+                return;
+            }
+
             INotificationProcessor cbNotif = NotificationProcessor;
 
             if (cbNotif is null)

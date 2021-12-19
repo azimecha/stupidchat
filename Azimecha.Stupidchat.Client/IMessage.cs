@@ -9,5 +9,8 @@ namespace Azimecha.Stupidchat.Client {
         IMember Sender { get; }
         bool Deleted { get; }
         MessageData Data { get; }
+        MessageSignedData SignedData { get; }
+        DateTime SentAt { get; }
+        long IndexInChannel { get; }
     }
 }

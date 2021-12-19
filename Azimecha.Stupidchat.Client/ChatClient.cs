@@ -82,6 +82,17 @@ namespace Azimecha.Stupidchat.Client {
 
         private static string IDToString(ReadOnlySpan<byte> spanKey) => spanKey.ToHexString();
 
+        public event Action<IMember> MemberJoined;
+        public event Action<IMember> MemberInfoChanged;
+        public event Action<IMember> MemberLeft;
+
+        public event Action<IChannel> ChannelAdded;
+        public event Action<IChannel> ChannelInfoChanged;
+        public event Action<IChannel> ChannelRemoved;
+
+        public event Action<IMessage> MessagePosted;
+        public event Action<IMessage> MessageDeleted;
+
         private class Server : IServer, IDisposable, ProtocolConnection.IErrorProcessor, ProtocolConnection.INotificationProcessor {
             private ChatClient _cclient;
             private ProtocolConnection _conn;
@@ -116,6 +127,9 @@ namespace Azimecha.Stupidchat.Client {
                 _dicChannels = new Dictionary<long, Channel>();
                 foreach (ChannelInfo infoChannel in _conn.PerformRequest<ChannelsResponse>(new ChannelsRequest()).Channels)
                     _dicChannels.Add(infoChannel.ID, new Channel(this, infoChannel));
+
+                _dicNotifProcessors = ProcessorAttribute.BindProcessorsList<Server, Core.Protocol.NotificationMessage>
+                    (this, _dicNotifProcessorMethods);
             }
 
             public string Address { get; private set; }
@@ -141,11 +155,141 @@ namespace Azimecha.Stupidchat.Client {
             }
 
             void ProtocolConnection.IErrorProcessor.ProcessError(Exception ex) {
-
+                Debug.WriteLine($"Error on connection to {Address}:{Port}: \n{ex}");
             }
 
+            private static readonly IDictionary<Type, System.Reflection.MethodInfo> _dicNotifProcessorMethods
+                = ProcessorAttribute.BuildProcessorsList<Server, Core.Protocol.NotificationMessage>();
+
+            private readonly IDictionary<Type, Action<Core.Protocol.NotificationMessage>> _dicNotifProcessors;
+
             void ProtocolConnection.INotificationProcessor.ProcessNotification(Core.Protocol.NotificationMessage msgNotification) {
-                throw new NotImplementedException();
+                Action<Core.Protocol.NotificationMessage> procProcessor;
+                if (_dicNotifProcessors.TryGetValue(msgNotification.GetType(), out procProcessor))
+                    procProcessor(msgNotification);
+            }
+
+            [Processor(typeof(Core.Notifications.MemberJoinedNotification))]
+            private void OnMemberJoined(Core.Notifications.MemberJoinedNotification notif) {
+                Member membNew = new Member(this, notif.Member);
+
+                lock (_dicMembers)
+                    _dicMembers.Add(IDToString(notif.Member.PublicKey), membNew);
+
+                _cclient.MemberJoined?.Invoke(membNew);
+            }
+
+            [Processor(typeof(Core.Notifications.MemberInfoChangedNotification))]
+            private void OnMemberInfoChanged(Core.Notifications.MemberInfoChangedNotification notif) {
+                Member membChanged = null;
+
+                lock (_dicMembers) {
+                    if (_dicMembers.TryGetValue(IDToString(notif.Member.PublicKey), out membChanged))
+                        membChanged.UpdateInfo(notif.Member);
+                }
+
+                if (!(membChanged is null))
+                    _cclient.MemberInfoChanged?.Invoke(membChanged);
+            }
+
+            [Processor(typeof(Core.Notifications.MemberLeftNotification))]
+            private void OnMemberLeft(Core.Notifications.MemberLeftNotification notif) {
+                Member membThatLeft = null;
+                string strID = IDToString(notif.MemberPublicKey);
+
+                lock (_dicMembers) {
+                    if (_dicMembers.TryGetValue(strID, out membThatLeft))
+                        _dicMembers.Remove(strID);
+                }
+
+                if (!(membThatLeft is null))
+                    _cclient.MemberLeft?.Invoke(membThatLeft);
+            }
+
+            [Processor(typeof(Core.Notifications.ChannelAddedNotification))]
+            private void OnChannelAdded(Core.Notifications.ChannelAddedNotification notif) {
+                Channel chanNew = new Channel(this, notif.Channel);
+
+                lock (_dicChannels)
+                    _dicChannels.Add(notif.Channel.ID, chanNew);
+
+                _cclient.ChannelAdded?.Invoke(chanNew);
+            }
+
+            [Processor(typeof(Core.Notifications.ChannelInfoChangedNotification))]
+            private void OnChannelInfoChanged(Core.Notifications.ChannelInfoChangedNotification notif) {
+                Channel chanChanged = null;
+
+                lock (_dicChannels) {
+                    if (_dicChannels.TryGetValue(notif.Channel.ID, out chanChanged))
+                        _dicChannels[notif.Channel.ID].UpdateInfo(notif.Channel);
+                }
+
+                if (!(chanChanged is null))
+                    _cclient.ChannelInfoChanged?.Invoke(chanChanged);
+            }
+
+            [Processor(typeof(Core.Notifications.ChannelRemovedNotification))]
+            private void OnChannelRemoved(Core.Notifications.ChannelRemovedNotification notif) {
+                Channel chanDeleted = null;
+
+                lock (_dicChannels) {
+                    if (_dicChannels.TryGetValue(notif.ChannelID, out chanDeleted))
+                        _dicChannels.Remove(notif.ChannelID);
+                }
+
+                if (!(chanDeleted is null))
+                    _cclient.ChannelRemoved?.Invoke(chanDeleted);
+            }
+
+            [Processor(typeof(Core.Notifications.MessagePostedNotification))]
+            private void OnMessagePosted(Core.Notifications.MessagePostedNotification notif) {
+                Channel chan = (Channel)FindChannel(notif.ChannelID);
+                IMessage msg = CreateMessageObject(chan, notif.MessageIndex, notif.Message);
+                chan.AddMessage(msg);
+            }
+
+            [Processor(typeof(Core.Notifications.MessageDeletedNotification))]
+            private void OnMessageDeleted(Core.Notifications.MessageDeletedNotification notif) {
+                Channel chan = (Channel)FindChannel(notif.ChannelID);
+                chan.RemoveMessage(notif.MessageIndex);
+            }
+
+            public IChannel FindChannel(long nChannelID) {
+                IChannel chan = TryFindChannel(nChannelID);
+
+                if (chan is null)
+                    throw new KeyNotFoundException($"No channel with ID {nChannelID}");
+
+                return chan;
+            }
+
+            public IChannel TryFindChannel(long nChannelID) {
+                Channel chan = null;
+
+                lock (_dicChannels)
+                    _dicChannels.TryGetValue(nChannelID, out chan);
+
+                return chan;
+            }
+
+            public IMember FindMember(ReadOnlySpan<byte> spanPublicKey) {
+                IMember memb = TryFindMember(spanPublicKey);
+
+                if (memb is null)
+                    throw new KeyNotFoundException($"No member with public key {IDToString(spanPublicKey)}");
+
+                return memb;
+            }
+
+            public IMember TryFindMember(ReadOnlySpan<byte> spanPublicKey) {
+                Member memb = null;
+                string strID = IDToString(spanPublicKey);
+
+                lock (_dicMembers)
+                    _dicMembers.TryGetValue(strID, out memb);
+
+                return memb;
             }
         }
 
@@ -289,6 +433,15 @@ namespace Azimecha.Stupidchat.Client {
             public void PostMessage(MessageSignedData msg) {
                 throw new NotImplementedException();
             }
+
+            internal void AddMessage(IMessage msg) {
+                _dicMessages.TryAdd(msg.IndexInChannel, msg);
+            }
+
+            internal void RemoveMessage(long nIndex) {
+                IMessage msg;
+                _dicMessages.TryRemove(nIndex, out msg);
+            }
         }
 
         private class User : IUser {
@@ -344,21 +497,35 @@ namespace Azimecha.Stupidchat.Client {
         private class Message : IMessage {
             private Channel _chan;
             private long _nIndex;
-            private MessageData _data;
+            private MessageData _dataUnsigned;
+            private MessageSignedData _dataSigned;
             private Member _membSender;
+            private DateTime _dateSent;
 
             public Message(Channel chan, long nIndex, MessageData data) {
                 _chan = chan;
                 _nIndex = nIndex;
-                _data = data;
+                _dataUnsigned = data;
 
+                _dataSigned = SignedStructSerializer.Deserialize<MessageSignedData>(data.SignedData, data.Signature, data.SenderPublicSigningKey);
                 _membSender = (Member)chan.Server.Members.Where(m => m.User.PublicKey.SequenceEqual(data.SenderPublicSigningKey)).FirstOrDefault();
+
+                DateTime dateSentAccordingToUser = new DateTime(_dataSigned.SendTime);
+                DateTime datePostedAccordingToServer = new DateTime(_dataUnsigned.PostedTime);
+                if ((dateSentAccordingToUser > datePostedAccordingToServer) || (datePostedAccordingToServer - dateSentAccordingToUser).TotalMinutes > 5.0)
+                    throw new InvalidDateException($"User reports message sent at {dateSentAccordingToUser}, "
+                        + $"but server reports it was posted at {datePostedAccordingToServer}");
+
+                _dateSent = dateSentAccordingToUser;
             }
 
             public IChannel Channel => _chan;
             public IMember Sender => _membSender;
             public bool Deleted => false;
-            public MessageData Data => _data;
+            public MessageData Data => _dataUnsigned;
+            public MessageSignedData SignedData => _dataSigned;
+            public DateTime SentAt => _dateSent;
+            public long IndexInChannel => _nIndex;
         }
 
         private class MissingMessage : IMessage {
@@ -374,6 +541,9 @@ namespace Azimecha.Stupidchat.Client {
             public IMember Sender => null;
             public bool Deleted => true;
             public MessageData Data => new MessageData();
+            public MessageSignedData SignedData => new MessageSignedData();
+            public DateTime SentAt => DateTime.MinValue;
+            public long IndexInChannel => _nIndex;
         }
     }
 }
