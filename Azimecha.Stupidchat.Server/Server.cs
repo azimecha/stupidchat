@@ -101,6 +101,8 @@ namespace Azimecha.Stupidchat.Server {
             });
 
             BroadcastNotification(new Core.Notifications.ChannelAddedNotification() { Channel = channel.ToChannelInfo() });
+            ChannelCreated?.Invoke(channel);
+
             return channel.ID;
         }
 
@@ -116,6 +118,7 @@ namespace Azimecha.Stupidchat.Server {
             });
 
             BroadcastNotification(new Core.Notifications.ChannelInfoChangedNotification() { Channel = channel.ToChannelInfo() });
+            ChannelModified?.Invoke(channel);
         }
 
         public void RemoveChannel(long nChannelID) {
@@ -129,6 +132,7 @@ namespace Azimecha.Stupidchat.Server {
             });
 
             BroadcastNotification(new Core.Notifications.ChannelRemovedNotification() { ChannelID = nChannelID });
+            ChannelDeleted?.Invoke(nChannelID);
         }
 
         public void RemoveMessage(long nChannelID, long nMessageIndex) {
@@ -136,15 +140,16 @@ namespace Azimecha.Stupidchat.Server {
                 throw new RecordNotFoundException($"No message with index {nMessageIndex} in channel {nChannelID}");
 
             BroadcastNotification(new Core.Notifications.MessageDeletedNotification() { ChannelID = nChannelID, MessageIndex = nMessageIndex });
+            MessageDeleted?.Invoke(nChannelID, nMessageIndex);
         }
 
         public void SetMemberPower(long nMemberID, Core.Structures.PowerLevel power)
-            => ModifyMember(nMemberID, memb => memb.Power = power);
+            => ModifyMember(nMemberID, memb => memb.Power = power, false, true);
 
         public void SetMemberNickname(long nMemberID, string strNickname)
-            => ModifyMember(nMemberID, memb => memb.Nickname = strNickname);
+            => ModifyMember(nMemberID, memb => memb.Nickname = strNickname, false, true);
 
-        private void ModifyMember(long nMemberID, Action<Records.MemberRecord> procAction) {
+        private void ModifyMember(long nMemberID, Action<Records.MemberRecord> procAction, bool bModifiesProfile, bool bModifiesOtherInfo) {
             Records.MemberRecord member = null;
             SQLite.SQLiteConnection db = Database;
 
@@ -155,19 +160,30 @@ namespace Azimecha.Stupidchat.Server {
             });
 
             BroadcastNotification(new Core.Notifications.MemberInfoChangedNotification() { Member = member.ToMemberInfo() });
+            if (bModifiesProfile) MemberProfileUpdated?.Invoke(member);
+            if (bModifiesOtherInfo) MemberOtherInfoUpdated?.Invoke(member);
         }
 
-        public IEnumerable<Core.Structures.ChannelInfo> Channels
-            => Database.Table<Records.ChannelRecord>().Select(chan => chan.ToChannelInfo());
+        public IEnumerable<Records.ChannelRecord> Channels
+            => Database.Table<Records.ChannelRecord>();
 
-        public IEnumerable<Core.Structures.MessageData> GetMessages(long nChannelID)
-            => Database.Table<Records.MessageRecord>().Where(msg => msg.ChannelID == nChannelID).Select(msg => msg.ToMessageData());
+        public IEnumerable<Records.MessageRecord> GetMessages(long nChannelID)
+            => Database.Table<Records.MessageRecord>().Where(msg => msg.ChannelID == nChannelID);
 
-        public IEnumerable<Core.Structures.MemberInfo> Members
-            => Database.Table<Records.MemberRecord>().Select(memb => memb.ToMemberInfo());
+        public IEnumerable<Records.MemberRecord> Members
+            => Database.Table<Records.MemberRecord>();
 
-        public long GetMemberID(Core.Structures.MemberInfo infMember)
-            => Database.Table<Records.MemberRecord>().Where(memb => memb.PublicKey.SequenceEqual(infMember.PublicKey)).First().MemberID;
+        public event Action<Records.ChannelRecord> ChannelCreated;
+        public event Action<Records.ChannelRecord> ChannelModified;
+        public event Action<long> ChannelDeleted;
+
+        public event Action<Records.MemberRecord> MemberJoined;
+        public event Action<Records.MemberRecord> MemberProfileUpdated;
+        public event Action<Records.MemberRecord> MemberOtherInfoUpdated;
+        public event Action<long> MemberLeft;
+
+        public event Action<Records.MessageRecord> MessagePosted;
+        public event Action<long, long> MessageDeleted; // ChannelID, MessageID
 
         internal ReadOnlySpan<byte> PrivateKey => _arrPrivateKey;
         internal SQLite.SQLiteConnection Database => _tllConnections.Value;
@@ -201,15 +217,19 @@ namespace Azimecha.Stupidchat.Server {
 
         private void NewUserCheck(ClientConnection conn) {
             SQLite.SQLiteConnection db = Database;
-            Records.MemberRecord member;
+            Records.MemberRecord member = null;
+            bool bNewMember = false;
 
             db.RunInTransaction(() => {
                 member = TryGetMemberRecord(conn.Connection.PartnerPublicKey);
                 if (member is null) {
                     member = new Records.MemberRecord() { PublicKey = conn.Connection.PartnerPublicKey.ToArray() };
                     db.Insert(member);
+                    bNewMember = true;
                 }
             });
+
+            if (bNewMember) MemberJoined?.Invoke(member);
         }
 
         private void BroadcastNotification(NotificationMessage msgNotification) {
@@ -348,6 +368,8 @@ namespace Azimecha.Stupidchat.Server {
             });
 
             BroadcastNotification(new Core.Notifications.MemberInfoChangedNotification() { Member = memb.ToMemberInfo() });
+            MemberProfileUpdated?.Invoke(memb);
+
             return new Core.Requests.GenericSuccessResponse();
         }
 
@@ -363,6 +385,8 @@ namespace Azimecha.Stupidchat.Server {
             });
 
             BroadcastNotification(new Core.Notifications.MemberInfoChangedNotification() { Member = memb.ToMemberInfo() });
+            MemberOtherInfoUpdated?.Invoke(memb);
+
             return new Core.Requests.GenericSuccessResponse();
         }
 
@@ -411,6 +435,8 @@ namespace Azimecha.Stupidchat.Server {
                 Message = message.ToMessageData(),
                 MessageIndex = message.MessageIndex
             });
+
+            MessagePosted?.Invoke(message);
 
             return new Core.Requests.MessagePostedResponse() { 
                 ChannelID = req.ChannelID, 

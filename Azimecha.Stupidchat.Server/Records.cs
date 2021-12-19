@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Azimecha.Stupidchat.Core;
 
 namespace Azimecha.Stupidchat.Server.Records {
     public class ChannelRecord {
@@ -18,6 +19,8 @@ namespace Azimecha.Stupidchat.Server.Records {
             Name = Name,
             Type = Type
         };
+
+        public override string ToString() => ToChannelInfo().ToDataString();
     }
 
     public class MessageRecord {
@@ -37,6 +40,22 @@ namespace Azimecha.Stupidchat.Server.Records {
             SignedData = SignedData,
             SenderPublicSigningKey = SenderPublicKey
         };
+
+        public Flattened.Message Flatten() {
+            Core.Structures.MessageSignedData dataSigned = ToMessageData().GetSignedData();
+            return new Flattened.Message() {
+                AttachmentURL = dataSigned.AttachmentURL,
+                ChannelID = ChannelID,
+                Index = MessageIndex,
+                Posted = DatePosted,
+                SenderPublicKey = SenderPublicKey,
+                Sent = new DateTime(dataSigned.SendTime),
+                Text = dataSigned.Text,
+                UID = UniqueID
+            };
+        }
+
+        public override string ToString() => Flatten().ToDataString();
     }
 
     public class MemberRecord {
@@ -55,5 +74,22 @@ namespace Azimecha.Stupidchat.Server.Records {
             ProfileSignature = ProfileSignature,
             PublicKey = PublicKey
         };
+
+        public Flattened.Member Flatten() {
+            Core.Structures.UserProfile profile = ToMemberInfo().GetProfile();
+            return new Flattened.Member() {
+                AvatarURL = profile.AvatarURL,
+                Bio = profile.Bio,
+                DisplayName = profile.DisplayName,
+                ID = MemberID,
+                LastProfileUpdate = new DateTime(profile.UpdateTime),
+                Nickname = Nickname,
+                Power = Power,
+                PublicKey = PublicKey,
+                Username = profile.Username
+            };
+        }
+
+        public override string ToString() => Flatten().ToDataString();
     }
 }

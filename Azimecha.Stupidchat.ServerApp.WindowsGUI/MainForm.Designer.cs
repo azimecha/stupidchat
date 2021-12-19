@@ -31,7 +31,15 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.StatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.TopToolStrip = new System.Windows.Forms.ToolStrip();
             this.StartStopButton = new System.Windows.Forms.ToolStripButton();
+            this.MemberPowerDropdown = new System.Windows.Forms.ToolStripDropDownButton();
+            this.PowerReducedItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.PowerNormalItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.PowerModeratorItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.PowerAdministratorItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ChannelCreateButton = new System.Windows.Forms.ToolStripButton();
+            this.ModifyChannelDropdown = new System.Windows.Forms.ToolStripDropDownButton();
+            this.ChannelNameItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ChannelDescriptionItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ChannelDeleteButton = new System.Windows.Forms.ToolStripButton();
             this.LogClearButton = new System.Windows.Forms.ToolStripButton();
             this.MessageDeleteButton = new System.Windows.Forms.ToolStripButton();
@@ -45,20 +53,12 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.ChannelsList = new System.Windows.Forms.ListBox();
             this.ChannelsLabel = new System.Windows.Forms.Label();
             this.RightSplit = new System.Windows.Forms.SplitContainer();
-            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.LogMessagesLayout = new System.Windows.Forms.TableLayoutPanel();
             this.LogLabel = new System.Windows.Forms.Label();
             this.LogMessageList = new System.Windows.Forms.ListBox();
-            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.ChannelMessagesLayout = new System.Windows.Forms.TableLayoutPanel();
             this.MessagesLabel = new System.Windows.Forms.Label();
             this.ChannelMessagesList = new System.Windows.Forms.ListBox();
-            this.MemberPowerDropdown = new System.Windows.Forms.ToolStripDropDownButton();
-            this.PowerReducedItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.PowerNormalItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.PowerModeratorItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.PowerAdministratorItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.ModifyChannelDropdown = new System.Windows.Forms.ToolStripDropDownButton();
-            this.ChannelNameItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.DescriptionItem = new System.Windows.Forms.ToolStripMenuItem();
             this.BottomStatusStrip.SuspendLayout();
             this.TopToolStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.MainSplit)).BeginInit();
@@ -75,8 +75,8 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.RightSplit.Panel1.SuspendLayout();
             this.RightSplit.Panel2.SuspendLayout();
             this.RightSplit.SuspendLayout();
-            this.tableLayoutPanel1.SuspendLayout();
-            this.tableLayoutPanel2.SuspendLayout();
+            this.LogMessagesLayout.SuspendLayout();
+            this.ChannelMessagesLayout.SuspendLayout();
             this.SuspendLayout();
             // 
             // BottomStatusStrip
@@ -130,15 +130,86 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.StartStopButton.Text = "Start Server";
             this.StartStopButton.Click += new System.EventHandler(this.StartStopButton_Click);
             // 
+            // MemberPowerDropdown
+            // 
+            this.MemberPowerDropdown.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.MemberPowerDropdown.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.PowerReducedItem,
+            this.PowerNormalItem,
+            this.PowerModeratorItem,
+            this.PowerAdministratorItem});
+            this.MemberPowerDropdown.Enabled = false;
+            this.MemberPowerDropdown.Image = ((System.Drawing.Image)(resources.GetObject("MemberPowerDropdown.Image")));
+            this.MemberPowerDropdown.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.MemberPowerDropdown.Name = "MemberPowerDropdown";
+            this.MemberPowerDropdown.Size = new System.Drawing.Size(101, 22);
+            this.MemberPowerDropdown.Text = "Member Power";
+            // 
+            // PowerReducedItem
+            // 
+            this.PowerReducedItem.Name = "PowerReducedItem";
+            this.PowerReducedItem.Size = new System.Drawing.Size(147, 22);
+            this.PowerReducedItem.Text = "Reduced";
+            this.PowerReducedItem.Click += new System.EventHandler(this.PowerReducedItem_Click);
+            // 
+            // PowerNormalItem
+            // 
+            this.PowerNormalItem.Name = "PowerNormalItem";
+            this.PowerNormalItem.Size = new System.Drawing.Size(147, 22);
+            this.PowerNormalItem.Text = "Normal";
+            this.PowerNormalItem.Click += new System.EventHandler(this.PowerNormalItem_Click);
+            // 
+            // PowerModeratorItem
+            // 
+            this.PowerModeratorItem.Name = "PowerModeratorItem";
+            this.PowerModeratorItem.Size = new System.Drawing.Size(147, 22);
+            this.PowerModeratorItem.Text = "Moderator";
+            this.PowerModeratorItem.Click += new System.EventHandler(this.PowerModeratorItem_Click);
+            // 
+            // PowerAdministratorItem
+            // 
+            this.PowerAdministratorItem.Name = "PowerAdministratorItem";
+            this.PowerAdministratorItem.Size = new System.Drawing.Size(147, 22);
+            this.PowerAdministratorItem.Text = "Administrator";
+            this.PowerAdministratorItem.Click += new System.EventHandler(this.PowerAdministratorItem_Click);
+            // 
             // ChannelCreateButton
             // 
             this.ChannelCreateButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.ChannelCreateButton.Enabled = false;
             this.ChannelCreateButton.Image = ((System.Drawing.Image)(resources.GetObject("ChannelCreateButton.Image")));
             this.ChannelCreateButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.ChannelCreateButton.Name = "ChannelCreateButton";
             this.ChannelCreateButton.Size = new System.Drawing.Size(92, 22);
             this.ChannelCreateButton.Text = "Create Channel";
             this.ChannelCreateButton.Click += new System.EventHandler(this.ChannelCreateButton_Click);
+            // 
+            // ModifyChannelDropdown
+            // 
+            this.ModifyChannelDropdown.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.ModifyChannelDropdown.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ChannelNameItem,
+            this.ChannelDescriptionItem});
+            this.ModifyChannelDropdown.Enabled = false;
+            this.ModifyChannelDropdown.Image = ((System.Drawing.Image)(resources.GetObject("ModifyChannelDropdown.Image")));
+            this.ModifyChannelDropdown.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.ModifyChannelDropdown.Name = "ModifyChannelDropdown";
+            this.ModifyChannelDropdown.Size = new System.Drawing.Size(105, 22);
+            this.ModifyChannelDropdown.Text = "Modify Channel";
+            // 
+            // ChannelNameItem
+            // 
+            this.ChannelNameItem.Name = "ChannelNameItem";
+            this.ChannelNameItem.Size = new System.Drawing.Size(134, 22);
+            this.ChannelNameItem.Text = "Name";
+            this.ChannelNameItem.Click += new System.EventHandler(this.ChannelNameItem_Click);
+            // 
+            // ChannelDescriptionItem
+            // 
+            this.ChannelDescriptionItem.Name = "ChannelDescriptionItem";
+            this.ChannelDescriptionItem.Size = new System.Drawing.Size(134, 22);
+            this.ChannelDescriptionItem.Text = "Description";
+            this.ChannelDescriptionItem.Click += new System.EventHandler(this.ChannelDescriptionItem_Click);
             // 
             // ChannelDeleteButton
             // 
@@ -230,6 +301,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.UsersLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.UsersLayout.Controls.Add(this.MembersLabel, 0, 0);
             this.UsersLayout.Controls.Add(this.MembersList, 0, 1);
+            this.UsersLayout.Cursor = System.Windows.Forms.Cursors.Arrow;
             this.UsersLayout.Dock = System.Windows.Forms.DockStyle.Fill;
             this.UsersLayout.Location = new System.Drawing.Point(0, 0);
             this.UsersLayout.Name = "UsersLayout";
@@ -272,6 +344,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.ChannelsLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.ChannelsLayout.Controls.Add(this.ChannelsList, 0, 1);
             this.ChannelsLayout.Controls.Add(this.ChannelsLabel, 0, 0);
+            this.ChannelsLayout.Cursor = System.Windows.Forms.Cursors.Arrow;
             this.ChannelsLayout.Dock = System.Windows.Forms.DockStyle.Fill;
             this.ChannelsLayout.Location = new System.Drawing.Point(0, 0);
             this.ChannelsLayout.Name = "ChannelsLayout";
@@ -294,6 +367,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.ChannelsList.TabIndex = 2;
             this.ChannelsList.SelectedIndexChanged += new System.EventHandler(this.ChannelsList_SelectedIndexChanged);
             this.ChannelsList.SelectedValueChanged += new System.EventHandler(this.ChannelsList_SelectedValueChanged);
+            this.ChannelsList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.ChannelsList_MouseDoubleClick);
             // 
             // ChannelsLabel
             // 
@@ -320,29 +394,30 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             // 
             // RightSplit.Panel1
             // 
-            this.RightSplit.Panel1.Controls.Add(this.tableLayoutPanel1);
+            this.RightSplit.Panel1.Controls.Add(this.LogMessagesLayout);
             // 
             // RightSplit.Panel2
             // 
-            this.RightSplit.Panel2.Controls.Add(this.tableLayoutPanel2);
+            this.RightSplit.Panel2.Controls.Add(this.ChannelMessagesLayout);
             this.RightSplit.Size = new System.Drawing.Size(530, 403);
             this.RightSplit.SplitterDistance = 176;
             this.RightSplit.TabIndex = 0;
             // 
-            // tableLayoutPanel1
+            // LogMessagesLayout
             // 
-            this.tableLayoutPanel1.ColumnCount = 1;
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Controls.Add(this.LogLabel, 0, 0);
-            this.tableLayoutPanel1.Controls.Add(this.LogMessageList, 0, 1);
-            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 2;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(526, 172);
-            this.tableLayoutPanel1.TabIndex = 1;
+            this.LogMessagesLayout.ColumnCount = 1;
+            this.LogMessagesLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.LogMessagesLayout.Controls.Add(this.LogLabel, 0, 0);
+            this.LogMessagesLayout.Controls.Add(this.LogMessageList, 0, 1);
+            this.LogMessagesLayout.Cursor = System.Windows.Forms.Cursors.Arrow;
+            this.LogMessagesLayout.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.LogMessagesLayout.Location = new System.Drawing.Point(0, 0);
+            this.LogMessagesLayout.Name = "LogMessagesLayout";
+            this.LogMessagesLayout.RowCount = 2;
+            this.LogMessagesLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
+            this.LogMessagesLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.LogMessagesLayout.Size = new System.Drawing.Size(526, 172);
+            this.LogMessagesLayout.TabIndex = 1;
             // 
             // LogLabel
             // 
@@ -371,20 +446,21 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.LogMessageList.TabIndex = 1;
             this.LogMessageList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.LogMessageList_MouseDoubleClick);
             // 
-            // tableLayoutPanel2
+            // ChannelMessagesLayout
             // 
-            this.tableLayoutPanel2.ColumnCount = 1;
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Controls.Add(this.MessagesLabel, 0, 0);
-            this.tableLayoutPanel2.Controls.Add(this.ChannelMessagesList, 0, 1);
-            this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 2;
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(526, 219);
-            this.tableLayoutPanel2.TabIndex = 1;
+            this.ChannelMessagesLayout.ColumnCount = 1;
+            this.ChannelMessagesLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.ChannelMessagesLayout.Controls.Add(this.MessagesLabel, 0, 0);
+            this.ChannelMessagesLayout.Controls.Add(this.ChannelMessagesList, 0, 1);
+            this.ChannelMessagesLayout.Cursor = System.Windows.Forms.Cursors.Arrow;
+            this.ChannelMessagesLayout.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ChannelMessagesLayout.Location = new System.Drawing.Point(0, 0);
+            this.ChannelMessagesLayout.Name = "ChannelMessagesLayout";
+            this.ChannelMessagesLayout.RowCount = 2;
+            this.ChannelMessagesLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
+            this.ChannelMessagesLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.ChannelMessagesLayout.Size = new System.Drawing.Size(526, 219);
+            this.ChannelMessagesLayout.TabIndex = 1;
             // 
             // MessagesLabel
             // 
@@ -414,74 +490,6 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.ChannelMessagesList.SelectedIndexChanged += new System.EventHandler(this.ChannelMessagesList_SelectedIndexChanged);
             this.ChannelMessagesList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.ChannelMessagesList_MouseDoubleClick);
             // 
-            // MemberPowerDropdown
-            // 
-            this.MemberPowerDropdown.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.MemberPowerDropdown.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.PowerReducedItem,
-            this.PowerNormalItem,
-            this.PowerModeratorItem,
-            this.PowerAdministratorItem});
-            this.MemberPowerDropdown.Enabled = false;
-            this.MemberPowerDropdown.Image = ((System.Drawing.Image)(resources.GetObject("MemberPowerDropdown.Image")));
-            this.MemberPowerDropdown.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.MemberPowerDropdown.Name = "MemberPowerDropdown";
-            this.MemberPowerDropdown.Size = new System.Drawing.Size(101, 22);
-            this.MemberPowerDropdown.Text = "Member Power";
-            // 
-            // PowerReducedItem
-            // 
-            this.PowerReducedItem.Name = "PowerReducedItem";
-            this.PowerReducedItem.Size = new System.Drawing.Size(180, 22);
-            this.PowerReducedItem.Text = "Reduced";
-            this.PowerReducedItem.Click += new System.EventHandler(this.PowerReducedItem_Click);
-            // 
-            // PowerNormalItem
-            // 
-            this.PowerNormalItem.Name = "PowerNormalItem";
-            this.PowerNormalItem.Size = new System.Drawing.Size(180, 22);
-            this.PowerNormalItem.Text = "Normal";
-            this.PowerNormalItem.Click += new System.EventHandler(this.PowerNormalItem_Click);
-            // 
-            // PowerModeratorItem
-            // 
-            this.PowerModeratorItem.Name = "PowerModeratorItem";
-            this.PowerModeratorItem.Size = new System.Drawing.Size(180, 22);
-            this.PowerModeratorItem.Text = "Moderator";
-            this.PowerModeratorItem.Click += new System.EventHandler(this.PowerModeratorItem_Click);
-            // 
-            // PowerAdministratorItem
-            // 
-            this.PowerAdministratorItem.Name = "PowerAdministratorItem";
-            this.PowerAdministratorItem.Size = new System.Drawing.Size(180, 22);
-            this.PowerAdministratorItem.Text = "Administrator";
-            this.PowerAdministratorItem.Click += new System.EventHandler(this.PowerAdministratorItem_Click);
-            // 
-            // ModifyChannelDropdown
-            // 
-            this.ModifyChannelDropdown.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.ModifyChannelDropdown.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.ChannelNameItem,
-            this.DescriptionItem});
-            this.ModifyChannelDropdown.Enabled = false;
-            this.ModifyChannelDropdown.Image = ((System.Drawing.Image)(resources.GetObject("ModifyChannelDropdown.Image")));
-            this.ModifyChannelDropdown.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.ModifyChannelDropdown.Name = "ModifyChannelDropdown";
-            this.ModifyChannelDropdown.Size = new System.Drawing.Size(105, 22);
-            this.ModifyChannelDropdown.Text = "Modify Channel";
-            // 
-            // ChannelNameItem
-            // 
-            this.ChannelNameItem.Name = "ChannelNameItem";
-            this.ChannelNameItem.Size = new System.Drawing.Size(180, 22);
-            this.ChannelNameItem.Text = "Name";
-            // 
-            // DescriptionItem
-            // 
-            this.DescriptionItem.Name = "DescriptionItem";
-            this.DescriptionItem.Size = new System.Drawing.Size(180, 22);
-            this.DescriptionItem.Text = "Description";
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -492,6 +500,8 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.Controls.Add(this.BottomStatusStrip);
             this.Name = "MainForm";
             this.Text = "Chat Server";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
             this.BottomStatusStrip.ResumeLayout(false);
             this.BottomStatusStrip.PerformLayout();
             this.TopToolStrip.ResumeLayout(false);
@@ -510,8 +520,8 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.RightSplit.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.RightSplit)).EndInit();
             this.RightSplit.ResumeLayout(false);
-            this.tableLayoutPanel1.ResumeLayout(false);
-            this.tableLayoutPanel2.ResumeLayout(false);
+            this.LogMessagesLayout.ResumeLayout(false);
+            this.ChannelMessagesLayout.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -535,10 +545,10 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
         private ToolStripButton ChannelCreateButton;
         private ToolStripButton ChannelDeleteButton;
         private SplitContainer RightSplit;
-        private TableLayoutPanel tableLayoutPanel1;
+        private TableLayoutPanel LogMessagesLayout;
         private Label LogLabel;
         private ListBox LogMessageList;
-        private TableLayoutPanel tableLayoutPanel2;
+        private TableLayoutPanel ChannelMessagesLayout;
         private Label MessagesLabel;
         private ListBox ChannelMessagesList;
         private ToolStripButton LogClearButton;
@@ -551,6 +561,6 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
         private ToolStripMenuItem PowerAdministratorItem;
         private ToolStripDropDownButton ModifyChannelDropdown;
         private ToolStripMenuItem ChannelNameItem;
-        private ToolStripMenuItem DescriptionItem;
+        private ToolStripMenuItem ChannelDescriptionItem;
     }
 }

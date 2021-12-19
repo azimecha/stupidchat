@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -133,6 +135,57 @@ namespace Azimecha.Stupidchat.Core {
                 if (nInitialValue >= nCompareTo) return false;
             } while (Interlocked.CompareExchange(ref nValue, nReplaceWith, nInitialValue) != nInitialValue);
             return true;
+        }
+
+        public static string ToDataString(this object objDataContract, string strBetweenValues = ", ", string strBetweenKeyAndValue = " = ") {
+            string strCombined = "";
+            bool bFirst = true;
+            Type typeObj = objDataContract.GetType();
+
+            if (typeObj.GetCustomAttribute<DataContractAttribute>() is null)
+                throw new NotSupportedException($"Type {typeObj.FullName} is not a data contract");
+
+            foreach (MemberInfo memb in typeObj.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+                | BindingFlags.FlattenHierarchy)) {
+                DataMemberAttribute attribDataMember = memb.GetCustomAttribute<DataMemberAttribute>();
+                if (attribDataMember is null) continue;
+
+                string strName = attribDataMember.Name ?? memb.Name;
+
+                object objValue;
+                switch (memb.MemberType) {
+                    case MemberTypes.Field:
+                        objValue = ((FieldInfo)memb).GetValue(objDataContract);
+                        break;
+
+                    case MemberTypes.Property:
+                        objValue = ((PropertyInfo)memb).GetValue(objDataContract);
+                        break;
+
+                    default:
+                        objValue = memb.MemberType;
+                        break;
+                }
+
+                string strValue;
+                if (objValue is null)
+                    strValue = "(null)";
+                else if (!(objValue.GetType().GetCustomAttribute<DataContractAttribute>() is null))
+                    strValue = "[" + objValue.ToDataString() + "]";
+                else
+                    strValue = objValue.ToString();
+
+                if (bFirst)
+                    bFirst = false;
+                else
+                    strCombined += strBetweenValues;
+
+                strCombined += strName;
+                strCombined += strBetweenKeyAndValue;
+                strCombined += strValue;
+            }
+
+            return strCombined;
         }
     }
 }
