@@ -247,12 +247,15 @@ namespace Azimecha.Stupidchat.Client {
                 Channel chan = (Channel)FindChannel(notif.ChannelID);
                 IMessage msg = CreateMessageObject(chan, notif.MessageIndex, notif.Message);
                 chan.AddMessage(msg);
+                _cclient.MessagePosted?.Invoke(msg);
             }
 
             [Processor(typeof(Core.Notifications.MessageDeletedNotification))]
             private void OnMessageDeleted(Core.Notifications.MessageDeletedNotification notif) {
                 Channel chan = (Channel)FindChannel(notif.ChannelID);
+                IMessage msg = chan.TryGetMessage(notif.MessageIndex, false);
                 chan.RemoveMessage(notif.MessageIndex);
+                _cclient.MessageDeleted?.Invoke(msg);
             }
 
             public IChannel FindChannel(long nChannelID) {
@@ -340,6 +343,19 @@ namespace Azimecha.Stupidchat.Client {
                 _objChannelMutex = new object();
                 _objDownloadMessagesMutex = new object();
                 _dicMessages = new ConcurrentDictionary<long, IMessage>();
+
+                // try to get the last message posted
+                MessagesBeforeResponse resp = _server.Connection.PerformRequest<MessagesBeforeResponse>(new MessagesBeforeRequest() {
+                    BeforeIndex = long.MaxValue,
+                    InChannel = info.ID,
+                    MaxCount = 1
+                });
+
+                if (resp.Messages.Length > 0) {
+                    MessageData data = resp.Messages[0];
+                    _nHighestMessageIndex = data.ID;
+                    _dicMessages.TryAdd(_nHighestMessageIndex, new Message(this, data.ID, data));
+                }
             }
 
             internal void UpdateInfo(ChannelInfo info) {
@@ -356,12 +372,16 @@ namespace Azimecha.Stupidchat.Client {
                 }
             }
 
-            internal IMessage TryGetMessage(long nIndex) {
+            internal IMessage TryGetMessage(long nIndex, bool bDownloadIfNotPresent) {
                 IMessage msg;
 
-                // check to see if it's already downloaded
+                // check to see if it's already downloaded or doesn't exist
                 if (_dicMessages.TryGetValue(nIndex, out msg))
                     return msg;
+                else if (!bDownloadIfNotPresent)
+                    return null;
+                else if ((nIndex < 0) || (nIndex > _nHighestMessageIndex))
+                    return null;
 
                 // acquire the lock.  not needed for the dictionary -
                 // just prevents us from downloading twice concurrently
@@ -371,7 +391,12 @@ namespace Azimecha.Stupidchat.Client {
                         return msg;
 
                     // download it
-                    SingleMessageResponse resp = _server.Connection.PerformRequest<SingleMessageResponse>(new SingleMessageRequest() { Index = nIndex });
+                    SingleMessageResponse resp = _server.Connection.PerformRequest<SingleMessageResponse>(
+                        new SingleMessageRequest() {
+                            Channel = _info.ID,
+                            Index = nIndex 
+                        });
+
                     msg = CreateMessageObject(this, nIndex, resp.Message);
 
                     // try to put it in
@@ -408,10 +433,13 @@ namespace Azimecha.Stupidchat.Client {
                 private long _nCurIndex;
                 private IMessage _msgCurrent;
 
-                public MessageEnumerator(Channel chan) { _chan = chan; }
+                public MessageEnumerator(Channel chan) { 
+                    _chan = chan;
+                    _nCurIndex = chan._nHighestMessageIndex;
+                }
 
-                public IMessage Current => throw new NotImplementedException();
-                object IEnumerator.Current => throw new NotImplementedException();
+                public IMessage Current => _msgCurrent;
+                object IEnumerator.Current => _msgCurrent;
 
                 public void Dispose() {
                     _chan = null;
@@ -420,8 +448,8 @@ namespace Azimecha.Stupidchat.Client {
                 }
 
                 public bool MoveNext() {
-                    _nCurIndex = _nCurIndex < 0 ? _chan._nHighestMessageIndex : _nCurIndex - 1;
-                    _msgCurrent = _chan.TryGetMessage(_nCurIndex);
+                    _nCurIndex = (_nCurIndex < 0) ? _chan._nHighestMessageIndex : (_nCurIndex - 1);
+                    _msgCurrent = _chan.TryGetMessage(_nCurIndex, true);
                     return !(_msgCurrent is null);
                 }
 
@@ -444,6 +472,7 @@ namespace Azimecha.Stupidchat.Client {
 
             internal void AddMessage(IMessage msg) {
                 _dicMessages.TryAdd(msg.IndexInChannel, msg);
+                Utils.InterlockedExchangeIfGreater(ref _nHighestMessageIndex, msg.IndexInChannel, msg.IndexInChannel);
             }
 
             internal void RemoveMessage(long nIndex) {

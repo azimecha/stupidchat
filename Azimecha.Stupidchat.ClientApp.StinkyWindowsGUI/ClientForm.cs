@@ -202,11 +202,11 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
 
         private void ServersTreeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
             if (e.Node.Tag is Client.IServer) {
-                _channelCurrent = null;
-                _serverCurrent = (Client.IServer)e.Node.Tag;
+                CurrentChannel = null;
+                CurrentServer = (Client.IServer)e.Node.Tag;
             } else if (e.Node.Tag is Client.IChannel) {
-                _channelCurrent = (Client.IChannel)e.Node.Tag;
-                _serverCurrent = _channelCurrent.Server;
+                CurrentChannel = (Client.IChannel)e.Node.Tag;
+                CurrentServer = _channelCurrent.Server;
             }
         }
 

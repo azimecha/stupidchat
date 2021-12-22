@@ -265,7 +265,7 @@ namespace Azimecha.Stupidchat.Server {
         internal void OnClientDisconnected(ClientConnection conn) {
             string strClientUserID = conn.ClientPublicKey.ToHexString();
             ClientConnection connRemoved;
-            _dicConnections.TryRemove(strClientUserID, out connRemoved);
+            _dicConnections?.TryRemove(strClientUserID, out connRemoved);
         }
 
         private static void ServerThread(object objServerWeak) {
@@ -354,7 +354,7 @@ namespace Azimecha.Stupidchat.Server {
         => new Core.Requests.MessagesBeforeResponse() {
             Messages = Database.Table<Records.MessageRecord>()
                 .Where(msg => msg.ChannelID == req.InChannel && msg.MessageIndex < req.BeforeIndex)
-                .OrderByDescending(msg => -msg.MessageIndex)
+                .OrderByDescending(msg => msg.MessageIndex)
                 .Take(req.MaxCount)
                 .Select(msg => msg.ToMessageData())
                 .ToArray()
