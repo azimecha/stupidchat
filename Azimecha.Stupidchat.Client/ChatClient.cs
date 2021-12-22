@@ -144,7 +144,7 @@ namespace Azimecha.Stupidchat.Client {
             }
 
             public IEnumerable<IMember> Members => _dicMembers.Values;
-            public IEnumerable<IChannel> Channels => throw new NotImplementedException();
+            public IEnumerable<IChannel> Channels => _dicChannels.Values;
 
             internal ChatClient AssociatedChatClient => _cclient;
             internal ProtocolConnection Connection => _conn;

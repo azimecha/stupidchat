@@ -18,6 +18,7 @@ namespace Azimecha.Stupidchat.Core {
         private SigningChallengeDecorator _mcSigning;
         private byte[] _arrConnectionKey;
         private Cryptography.ISigningAlgorithm _algoSigning;
+        private WeakReference<IDisposalObserver<NetworkConnection>> _cbDisposed;
 
         public NetworkConnection(TcpClient client, bool bDisposeTCPClient, ReadOnlySpan<byte> spanPrivateKey) {
             _client = client;
@@ -43,6 +44,11 @@ namespace Azimecha.Stupidchat.Core {
             set => Frontend.MaximumMessageSize = value;
         }
 
+        public IDisposalObserver<NetworkConnection> DisposalObserver {
+            get => _cbDisposed?.GetValue();
+            set => _cbDisposed = new WeakReference<IDisposalObserver<NetworkConnection>>(value);
+        }
+
         public void Dispose() {
             Interlocked.Exchange(ref _mcSymmetric, null)?.Dispose();
             Interlocked.Exchange(ref _mcAsymmetric, null)?.Dispose();
@@ -52,6 +58,8 @@ namespace Azimecha.Stupidchat.Core {
                 Interlocked.Exchange(ref _client, null)?.Dispose();
                 Interlocked.Exchange(ref _stream, null)?.Dispose();
             }
+
+            Interlocked.Exchange(ref _cbDisposed, null)?.GetValue()?.OnObjectDisposed(this);
         }
 
         public void Initialize() {

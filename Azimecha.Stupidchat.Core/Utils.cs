@@ -35,7 +35,7 @@ namespace Azimecha.Stupidchat.Core {
         public static void ReadExactly(this Stream stm, byte[] arrBuffer, int nOffset, int nCount, CancellationToken? ct = null) {
             while (nCount > 0) {
                 Task<int> taskRead = (ct is null) ? stm.ReadAsync(arrBuffer, nOffset, nCount) : stm.ReadAsync(arrBuffer, nOffset, nCount, ct.Value);
-                taskRead.Wait();
+                taskRead.WaitAndDisaggregate();
 
                 switch (taskRead.Status) {
                     case TaskStatus.Faulted:
@@ -53,35 +53,36 @@ namespace Azimecha.Stupidchat.Core {
             }
         }
 
-        public static void CheckFinished(this Task taskCheck) {
-            switch (taskCheck.Status) {
-                case TaskStatus.Faulted:
-                    throw taskCheck.Exception;
-
-                case TaskStatus.Canceled:
-                    throw new OperationCanceledException();
-
-                case TaskStatus.Running:
-                case TaskStatus.WaitingForActivation:
-                case TaskStatus.WaitingToRun:
-                case TaskStatus.WaitingForChildrenToComplete:
-                    throw new InvalidOperationException("Task still running");
+        public static void WaitAndDisaggregate(this Task task, CancellationToken? ct = null, int nTimeout = -1) {
+            try {
+                if (ct.HasValue) {
+                    if (nTimeout >= 0)
+                        task.Wait(nTimeout, ct.Value);
+                    else
+                        task.Wait(ct.Value);
+                } else
+                    task.Wait();
+            } catch (AggregateException ex) {
+                if (ex.InnerExceptions.Count == 1)
+                    throw ex.InnerExceptions[0];
+                else
+                    throw;
             }
         }
 
-        public static void CheckFinished<T>(this Task<T> taskCheck) {
-            switch (taskCheck.Status) {
-                case TaskStatus.Faulted:
-                    throw taskCheck.Exception;
-
-                case TaskStatus.Canceled:
-                    throw new OperationCanceledException();
-
-                case TaskStatus.Running:
-                case TaskStatus.WaitingForActivation:
-                case TaskStatus.WaitingToRun:
-                case TaskStatus.WaitingForChildrenToComplete:
-                    throw new InvalidOperationException("Task still running");
+        public static void WaitAndDisaggregate<T>(this Task<T> task, CancellationToken? ct = null, int nTimeout = -1) {
+            try {
+                if (ct.HasValue) {
+                    if (nTimeout >= 0)
+                        task.Wait(nTimeout, ct.Value);
+                    else
+                        task.Wait(ct.Value);
+                } else
+                    task.Wait();
+            } catch (Exception ex) {
+                while ((ex is AggregateException exAggregate) && (exAggregate.InnerExceptions.Count == 1))
+                    ex = exAggregate.InnerExceptions[0];
+                throw ex;
             }
         }
 
@@ -109,10 +110,16 @@ namespace Azimecha.Stupidchat.Core {
             }
         }
 
-        public static string ToHexString(this ReadOnlySpan<byte> spanBytes) {
+        public static string ToHexString(this ReadOnlySpan<byte> spanBytes)
+            => ToHexString(spanBytes.ToArray());
+
+        public static string ToHexString(this byte[] arrBytes)
+            => ToHexString((IEnumerable<byte>)arrBytes);
+
+        public static string ToHexString(this IEnumerable<byte> enuBytes) {
             string str = "";
 
-            foreach (byte nCurVal in spanBytes)
+            foreach (byte nCurVal in enuBytes)
                 str += nCurVal.ToString("X2");
 
             return str;
@@ -172,6 +179,8 @@ namespace Azimecha.Stupidchat.Core {
                     strValue = "(null)";
                 else if (!(objValue.GetType().GetCustomAttribute<DataContractAttribute>() is null))
                     strValue = "[" + objValue.ToDataString() + "]";
+                else if (objValue is IEnumerable<byte> enuValue)
+                    strValue = enuValue.ToHexString();
                 else
                     strValue = objValue.ToString();
 
@@ -186,6 +195,31 @@ namespace Azimecha.Stupidchat.Core {
             }
 
             return strCombined;
+        }
+
+        // https://stackoverflow.com/questions/321370/how-can-i-convert-a-hex-string-to-a-byte-array/321404
+        public static byte[] HexStringToBytes(string strHexDigits) {
+            if ((strHexDigits.Length & 1) != 0)
+                throw new ArgumentException("Hex strings must contain an even number of digits, "
+                    + $"but this one contains {strHexDigits.Length}");
+
+            byte[] arrData = new byte[strHexDigits.Length >> 1];
+
+            for (int i = 0; i < strHexDigits.Length >> 1; ++i) {
+                arrData[i] = (byte)((HexDigitToValue(strHexDigits[i << 1]) << 4) + (HexDigitToValue(strHexDigits[(i << 1) + 1])));
+            }
+
+            return arrData;
+        }
+
+        public static int HexDigitToValue(char cHexDigit) {
+            int nHexVal = (int)cHexDigit;
+            //For uppercase A-F letters:
+            //return val - (val < 58 ? 48 : 55);
+            //For lowercase a-f letters:
+            //return val - (val < 58 ? 48 : 87);
+            //Or the two combined, but a bit slower:
+            return nHexVal - (nHexVal < 58 ? 48 : (nHexVal < 97 ? 55 : 87));
         }
     }
 }

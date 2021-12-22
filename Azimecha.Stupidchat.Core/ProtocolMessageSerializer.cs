@@ -45,6 +45,7 @@ namespace Azimecha.Stupidchat.Core {
             Dictionary<string, Type> dicTypes = new Dictionary<string, Type>();
 
             foreach (Assembly ass in AppDomain.CurrentDomain.GetAssemblies()) {
+                if (ass.IsDynamic) continue;
                 foreach (Type typeCur in ass.GetExportedTypes().Where(t => MESSAGE_INTERFACE.IsAssignableFrom(t)))
                     dicTypes.Add(typeCur.FullName, typeCur);
             }

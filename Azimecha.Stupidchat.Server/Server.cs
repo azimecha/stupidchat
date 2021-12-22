@@ -26,6 +26,7 @@ namespace Azimecha.Stupidchat.Server {
         private bool _bStopRequested;
 
         public Server(ReadOnlySpan<byte> spanPrivateKey, IPEndPoint endpointListenOn, Core.Structures.ServerInfo info, string strDatabasePath) {
+            _arrPrivateKey = spanPrivateKey.ToArray();
             _dicConnections = new ConcurrentDictionary<string, ClientConnection>();
             _listener = new TcpListener(endpointListenOn);
             _ctsDisposing = new CancellationTokenSource();
@@ -164,6 +165,19 @@ namespace Azimecha.Stupidchat.Server {
             if (bModifiesOtherInfo) MemberOtherInfoUpdated?.Invoke(member);
         }
 
+        public void KickMember(long nMemberID) {
+            Records.MemberRecord member = null;
+            SQLite.SQLiteConnection db = Database;
+
+            db.RunInTransaction(() => {
+                member = db.Table<Records.MemberRecord>().Where(memb => memb.MemberID == nMemberID).First();
+                db.Delete(member);
+            });
+
+            BroadcastNotification(new Core.Notifications.MemberLeftNotification() { MemberPublicKey = member.ToMemberInfo().PublicKey });
+            MemberLeft?.Invoke(nMemberID);
+        }
+
         public IEnumerable<Records.ChannelRecord> Channels
             => Database.Table<Records.ChannelRecord>();
 
@@ -200,7 +214,7 @@ namespace Azimecha.Stupidchat.Server {
 
         private void AcceptConnection(TcpClient client) {
             ClientConnection conn = new ClientConnection(this, client);
-            string strClientUserID = conn.Connection.PartnerPublicKey.ToHexString();
+            string strClientUserID = conn.ClientPublicKey.ToHexString();
 
             try {
                 if (!_dicConnections.TryAdd(strClientUserID, conn))
@@ -221,9 +235,9 @@ namespace Azimecha.Stupidchat.Server {
             bool bNewMember = false;
 
             db.RunInTransaction(() => {
-                member = TryGetMemberRecord(conn.Connection.PartnerPublicKey);
+                member = TryGetMemberRecord(conn.ClientPublicKey);
                 if (member is null) {
-                    member = new Records.MemberRecord() { PublicKey = conn.Connection.PartnerPublicKey.ToArray() };
+                    member = new Records.MemberRecord() { PublicKeyString = conn.ClientPublicKey.ToHexString() };
                     db.Insert(member);
                     bNewMember = true;
                 }
@@ -233,10 +247,7 @@ namespace Azimecha.Stupidchat.Server {
         }
 
         private void BroadcastNotification(NotificationMessage msgNotification) {
-            ClientConnection[] arrConnections;
-
-            lock (_dicConnections)
-                arrConnections = _dicConnections.Values.ToArray();
+            ClientConnection[] arrConnections = _dicConnections.Values.ToArray();
 
             arrConnections.AsParallel().ForAll(conn => {
                 try {
@@ -249,6 +260,12 @@ namespace Azimecha.Stupidchat.Server {
 
         private void HandleServerThreadError(Exception ex) {
             LogListener.LogMessage($"Error in server thread: {ex}");
+        }
+
+        internal void OnClientDisconnected(ClientConnection conn) {
+            string strClientUserID = conn.ClientPublicKey.ToHexString();
+            ClientConnection connRemoved;
+            _dicConnections.TryRemove(strClientUserID, out connRemoved);
         }
 
         private static void ServerThread(object objServerWeak) {
@@ -280,7 +297,12 @@ namespace Azimecha.Stupidchat.Server {
                 try {
                     Task<TcpClient> taskAccept = listener.AcceptTcpClientAsync();
                     taskAccept.Wait(ctDisposing);
-                    weakServer.GetValue()?.AcceptConnection(taskAccept.Result);
+                    try {
+                        weakServer.GetValue()?.AcceptConnection(taskAccept.Result);
+                    } catch (Exception) {
+                        taskAccept.Result.Dispose();
+                        throw;
+                    }
                 } catch (Exception ex) {
                     if (weakServer.GetValue()?._bStopRequested ?? true) {
                         LogListener.LogMessage($"Server thread exiting due to cancellation. Exception was: {ex}");
@@ -355,13 +377,13 @@ namespace Azimecha.Stupidchat.Server {
         private Core.Requests.GenericSuccessResponse HandleProfileUpdateRequest(ClientConnection conn, Core.Requests.UpdateProfileRequest req) {
             // make sure it's valid before putting it in
             Core.Structures.UserProfile profile = SignedStructSerializer.Deserialize<Core.Structures.UserProfile>
-                (req.SignedData, req.Signature, conn.Connection.PartnerPublicKey);
+                (req.SignedData, req.Signature, conn.ClientPublicKey);
 
             Records.MemberRecord memb = null;
 
             SQLite.SQLiteConnection db = Database;
             db.RunInTransaction(() => {
-                memb = GetMemberRecord(conn.Connection.PartnerPublicKey);
+                memb = GetMemberRecord(conn.ClientPublicKey);
                 memb.SignedProfile = req.SignedData;
                 memb.ProfileSignature = req.Signature;
                 db.Update(memb);
@@ -379,7 +401,7 @@ namespace Azimecha.Stupidchat.Server {
 
             SQLite.SQLiteConnection db = Database;
             db.RunInTransaction(() => {
-                memb = GetMemberRecord(conn.Connection.PartnerPublicKey);
+                memb = GetMemberRecord(conn.ClientPublicKey);
                 memb.Nickname = req.Nickname;
                 db.Update(memb);
             });
@@ -391,8 +413,8 @@ namespace Azimecha.Stupidchat.Server {
         }
 
         public Records.MemberRecord TryGetMemberRecord(ReadOnlySpan<byte> spanPublicKey) {
-            byte[] arrPublicKey = spanPublicKey.ToArray();
-            return Database.Table<Records.MemberRecord>().Where(memb => memb.PublicKey.SequenceEqual(arrPublicKey)).FirstOrDefault();
+            string strPublicKey = spanPublicKey.ToHexString();
+            return Database.Table<Records.MemberRecord>().Where(memb => memb.PublicKeyString == strPublicKey).FirstOrDefault();
         }
 
         public Records.MemberRecord GetMemberRecord(ReadOnlySpan<byte> spanPublicKey) {
@@ -407,7 +429,7 @@ namespace Azimecha.Stupidchat.Server {
         [Processor(typeof(Core.Requests.PostMessageRequest))]
         private Core.Requests.MessagePostedResponse HandleMessagePostRequest(ClientConnection conn, Core.Requests.PostMessageRequest req) {
             Core.Structures.MessageSignedData data = SignedStructSerializer.Deserialize<Core.Structures.MessageSignedData>
-                (req.SignedData, req.Signature, conn.Connection.PartnerPublicKey);
+                (req.SignedData, req.Signature, conn.ClientPublicKey);
 
             Records.MessageRecord message = null;
 
@@ -419,7 +441,7 @@ namespace Azimecha.Stupidchat.Server {
                     ChannelID = chanPostIn.ID,
                     DatePosted = DateTime.Now,
                     MessageIndex = chanPostIn.NextMessageID,
-                    SenderPublicKey = conn.Connection.PartnerPublicKey.ToArray(),
+                    SenderPublicKey = conn.ClientPublicKey.ToArray(),
                     Signature = req.Signature,
                     SignedData = req.SignedData
                 };

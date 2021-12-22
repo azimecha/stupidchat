@@ -40,11 +40,8 @@ namespace Azimecha.Stupidchat.Core.Networking {
             Task taskSend = Task.Run(() => conn.SendMessage(arrSend));
             Task<byte[]> taskRecv = Task.Run(() => ct.HasValue ? conn.ReceiveMesssage(ct.Value) : conn.ReceiveMesssage());
 
-            taskSend.Wait(nTimeout);
-            taskRecv.Wait(nTimeout);
-
-            taskSend.CheckFinished();
-            taskRecv.CheckFinished();
+            taskSend.WaitAndDisaggregate(nTimeout: nTimeout);
+            taskRecv.WaitAndDisaggregate(nTimeout: nTimeout);
 
             return taskRecv.Result;
         }

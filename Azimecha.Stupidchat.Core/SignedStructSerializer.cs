@@ -18,7 +18,10 @@ namespace Azimecha.Stupidchat.Core {
             return data;
         }
 
-        public static unsafe T Deserialize<T>(ReadOnlySpan<byte> spanData, ReadOnlySpan<byte> spanSignature, ReadOnlySpan<byte> spanPublicKey) {
+        public static unsafe T Deserialize<T>(ReadOnlySpan<byte> spanData, ReadOnlySpan<byte> spanSignature, ReadOnlySpan<byte> spanPublicKey, bool bBlankOK = true) {
+            if ((spanData.Length == 0) && (spanSignature.Length == 0) && bBlankOK)
+                return default(T);
+
             _algoSign.Check(spanData, spanSignature, spanPublicKey);
 
             fixed (byte* pData = spanData)

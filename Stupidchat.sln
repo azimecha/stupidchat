@@ -13,7 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azimecha.Stupidchat.Network
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azimecha.Stupidchat.ProtocolTest", "Azimecha.Stupidchat.ProtocolTest\Azimecha.Stupidchat.ProtocolTest.csproj", "{131EABC6-8E8B-4505-9C95-0FC7C8BD5717}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azimecha.Stupidchat.ServerApp.WindowsGUI", "Azimecha.Stupidchat.ServerApp.WindowsGUI\Azimecha.Stupidchat.ServerApp.WindowsGUI.csproj", "{FDB39FAF-0B12-42EB-BF6A-F0ABC89E37F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azimecha.Stupidchat.ServerApp.WindowsGUI", "Azimecha.Stupidchat.ServerApp.WindowsGUI\Azimecha.Stupidchat.ServerApp.WindowsGUI.csproj", "{FDB39FAF-0B12-42EB-BF6A-F0ABC89E37F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI", "Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI\Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI.csproj", "{83BDB27D-7D11-4792-81AE-60C52705D456}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{FDB39FAF-0B12-42EB-BF6A-F0ABC89E37F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FDB39FAF-0B12-42EB-BF6A-F0ABC89E37F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FDB39FAF-0B12-42EB-BF6A-F0ABC89E37F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83BDB27D-7D11-4792-81AE-60C52705D456}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83BDB27D-7D11-4792-81AE-60C52705D456}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83BDB27D-7D11-4792-81AE-60C52705D456}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83BDB27D-7D11-4792-81AE-60C52705D456}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

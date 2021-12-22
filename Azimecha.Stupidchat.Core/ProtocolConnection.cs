@@ -8,11 +8,12 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Azimecha.Stupidchat.Core {
-    public class ProtocolConnection : IDisposable {
+    public class ProtocolConnection : IDisposable, IDisposalObserver<NetworkConnection> {
         private NetworkConnection _conn;
         private WeakReference<IRequestProcessor> _cbRequest;
         private WeakReference<INotificationProcessor> _cbNotif;
         private WeakReference<IErrorProcessor> _cbError;
+        private WeakReference<IDisposalObserver<ProtocolConnection>> _cbDisposed;
         private CancellationTokenSource _ctsDisposed;
         private IDictionary<long, TaskCompletionSource<Protocol.ResponseMessage>> _dicOutstandingRequests;
         private Thread _thdReceive;
@@ -22,6 +23,8 @@ namespace Azimecha.Stupidchat.Core {
 
         public ProtocolConnection(TcpClient client, bool bDisposeTCPClient, ReadOnlySpan<byte> spanPrivateKey) {
             _conn = new NetworkConnection(client, bDisposeTCPClient, spanPrivateKey);
+            _conn.DisposalObserver = this;
+
             _dicOutstandingRequests = new Dictionary<long, TaskCompletionSource<Protocol.ResponseMessage>>();
             _ctsDisposed = new CancellationTokenSource();
             _objStartMutex = new object();
@@ -63,8 +66,7 @@ namespace Azimecha.Stupidchat.Core {
 
         public Protocol.ResponseMessage PerformRequest(Protocol.RequestMessage msgRequest) {
             Task<Protocol.ResponseMessage> taskResp = IssueRequest(msgRequest);
-            taskResp.Wait();
-            taskResp.CheckFinished();
+            taskResp.WaitAndDisaggregate();
             return taskResp.Result;
         }
 
@@ -81,6 +83,7 @@ namespace Azimecha.Stupidchat.Core {
         public void Dispose() {
             _ctsDisposed.Cancel();
             Interlocked.Exchange(ref _conn, null)?.Dispose();
+            Interlocked.Exchange(ref _cbDisposed, null)?.GetValue()?.OnObjectDisposed(this);
         }
 
         public interface IRequestProcessor {
@@ -112,6 +115,11 @@ namespace Azimecha.Stupidchat.Core {
             set => _cbError = new WeakReference<IErrorProcessor>(value);
         }
 
+        public IDisposalObserver<ProtocolConnection> DisposalObserver {
+            get => _cbDisposed?.GetValue();
+            set => _cbDisposed = new WeakReference<IDisposalObserver<ProtocolConnection>>(value);
+        }
+
         private static void ReceiveThreadProc(object objWeakConnection) {
             WeakReference<ProtocolConnection> conn = (WeakReference<ProtocolConnection>)objWeakConnection;
 
@@ -120,15 +128,33 @@ namespace Azimecha.Stupidchat.Core {
 
                 while (!(ctDisposed?.IsCancellationRequested ?? true)) {
                     try {
-                        byte[] arrMessage = conn.GetValue()?._conn.ReceiveMesssage(ctDisposed.Value);
-                        if (arrMessage is null)
-                            throw new OperationCanceledException();
+                        try {
+                            byte[] arrMessage = conn.GetValue()?._conn.ReceiveMesssage(ctDisposed.Value);
+                            if (arrMessage is null)
+                                throw new OperationCanceledException();
 
-                        Protocol.MessageContainer mc = ProtocolMessageSerializer.Deserialize(Encoding.UTF8.GetString(arrMessage));
-                        conn.GetValue()?.ProcessMessage(mc.Message);
+                            Protocol.MessageContainer mc = ProtocolMessageSerializer.Deserialize(Encoding.UTF8.GetString(arrMessage));
+                            conn.GetValue()?.ProcessMessage(mc.Message);
+
+                        } catch (System.IO.IOException exIO) {
+                            if (exIO.InnerException is SocketException)
+                                throw exIO.InnerException;
+                            else
+                                throw;
+                        }
 
                     } catch (OperationCanceledException) {
                         Debug.WriteLine($"[{nameof(ProtocolConnection)}/Thread{Thread.CurrentThread.ManagedThreadId}] Operation cancelled, exiting");
+                        return;
+
+                    } catch (SocketException exSocket) {
+                        Debug.WriteLine($"[{nameof(ProtocolConnection)}/Thread{Thread.CurrentThread.ManagedThreadId}] Socket error, disposing: {exSocket}");
+                        conn.GetValue()?.Dispose();
+                        return;
+
+                    } catch (System.IO.EndOfStreamException) {
+                        Debug.WriteLine($"[{nameof(ProtocolConnection)}/Thread{Thread.CurrentThread.ManagedThreadId}] End of stream, disposing");
+                        conn.GetValue()?.Dispose();
                         return;
 
                     } catch (Exception ex) {
@@ -214,6 +240,10 @@ namespace Azimecha.Stupidchat.Core {
                 throw new NoHandlerException("Notification could not be processed because there is no notification processor");
 
             cbNotif.ProcessNotification(msgNotification);
+        }
+
+        void IDisposalObserver<NetworkConnection>.OnObjectDisposed(NetworkConnection obj) {
+            Dispose();
         }
     }
 }

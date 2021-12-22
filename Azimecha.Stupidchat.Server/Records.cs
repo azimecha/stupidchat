@@ -61,7 +61,7 @@ namespace Azimecha.Stupidchat.Server.Records {
     public class MemberRecord {
         [PrimaryKey, AutoIncrement]
         public long MemberID { get; set; }
-        [Indexed] public byte[] PublicKey { get; set; }
+        [Indexed] public string PublicKeyString { get; set; }
         public string Nickname { get; set; }
         public Core.Structures.PowerLevel Power { get; set; }
         public byte[] SignedProfile { get; set; }
@@ -72,7 +72,7 @@ namespace Azimecha.Stupidchat.Server.Records {
             Power = Power,
             Profile = SignedProfile,
             ProfileSignature = ProfileSignature,
-            PublicKey = PublicKey
+            PublicKey = Utils.HexStringToBytes(PublicKeyString)
         };
 
         public Flattened.Member Flatten() {
@@ -85,7 +85,7 @@ namespace Azimecha.Stupidchat.Server.Records {
                 LastProfileUpdate = new DateTime(profile.UpdateTime),
                 Nickname = Nickname,
                 Power = Power,
-                PublicKey = PublicKey,
+                PublicKey = Utils.HexStringToBytes(PublicKeyString),
                 Username = profile.Username
             };
         }

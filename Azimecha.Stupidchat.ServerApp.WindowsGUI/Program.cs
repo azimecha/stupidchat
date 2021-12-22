@@ -9,7 +9,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
         [STAThread]
         static void Main() {
             ApplicationConfiguration.Initialize();
-            Application.Run(new MainForm());
+            Application.Run(new ServerForm());
         }
     }
 }

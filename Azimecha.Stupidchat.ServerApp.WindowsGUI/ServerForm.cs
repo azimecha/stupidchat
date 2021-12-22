@@ -5,11 +5,11 @@ using System.IO;
 using System.Windows.Forms;
 
 namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
-    public partial class MainForm : Form {
+    public partial class ServerForm : Form {
         private Server.Server _server;
         private Server.Records.ChannelRecord _chanSelected;
 
-        public MainForm() {
+        public ServerForm() {
             InitializeComponent();
 
             if (!Properties.Settings.Default.SettingsInitialized)
@@ -203,14 +203,14 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
         }
 
         private class LogListener : ILogListener {
-            private WeakReference<MainForm> _weakForm;
+            private WeakReference<ServerForm> _weakForm;
 
-            public LogListener(MainForm form) {
-                _weakForm = new WeakReference<MainForm>(form);
+            public LogListener(ServerForm form) {
+                _weakForm = new WeakReference<ServerForm>(form);
             }
 
             public void LogMessage(string strMessage) {
-                MainForm form;
+                ServerForm form;
                 if (_weakForm.TryGetTarget(out form))
                     form.BeginInvoke(() => form.LogMessageList.Items.Add("[Server Log] " + strMessage));
             }
@@ -222,12 +222,15 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
 
         private void RefreshButton_Click(object sender, EventArgs e) {
             MembersList.Items.Clear();
-            foreach (Server.Records.MemberRecord member in _server.Members)
-                MembersList.Items.Add(member);
-
             ChannelsList.Items.Clear();
-            foreach (Server.Records.ChannelRecord channel in _server.Channels)
-                ChannelsList.Items.Add(channel);
+
+            if (!(_server is null)) {
+                foreach (Server.Records.MemberRecord member in _server.Members)
+                    MembersList.Items.Add(member);
+
+                foreach (Server.Records.ChannelRecord channel in _server.Channels)
+                    ChannelsList.Items.Add(channel);
+            }
 
             RefreshMessagesList();
         }
@@ -248,7 +251,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
         }
 
         private void MembersList_SelectedIndexChanged(object sender, EventArgs e) {
-            MemberPowerDropdown.Enabled = MembersList.SelectedIndex >= 0;
+            MemberRemoveButton.Enabled = MemberPowerDropdown.Enabled = MembersList.SelectedIndex >= 0;
         }
 
         private void PowerReducedItem_Click(object sender, EventArgs e)
@@ -350,6 +353,16 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
                     MessageBoxIcon.Warning) != DialogResult.OK)
                     e.Cancel = true;
             }
+        }
+
+        private void MemberRemoveButton_Click(object sender, EventArgs e) {
+            if (MembersList.SelectedItem is Server.Records.MemberRecord memb)
+                _server.KickMember(memb.MemberID);
+        }
+
+        private void MembersList_MouseDoubleClick(object sender, MouseEventArgs e) {
+            if (MembersList.SelectedItem is Server.Records.MemberRecord memb)
+                MessageBox.Show(this, memb.Flatten().ToDataString("\n"), "Member Info");
         }
     }
 }
