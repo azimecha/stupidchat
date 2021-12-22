@@ -432,7 +432,14 @@ namespace Azimecha.Stupidchat.Client {
             }
 
             public void PostMessage(MessageSignedData msg) {
-                throw new NotImplementedException();
+                SignedStructSerializer.SignedData signed = SignedStructSerializer.Serialize(msg,
+                    _server.AssociatedChatClient._arrPublicKey, _server.AssociatedChatClient._arrPrivateKey);
+                
+                _server.Connection.PerformRequest(new PostMessageRequest() { 
+                    ChannelID = _info.ID,
+                    Signature = signed.Signature,
+                    SignedData = signed.Data
+                });
             }
 
             internal void AddMessage(IMessage msg) {

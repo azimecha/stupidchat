@@ -92,7 +92,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
                     foreach (Client.IMessage msg in _channelCurrent.Messages.Take(INITIAL_MESSAGES_LOAD_COUNT))
                         AddMessageControl(msg);
 
-                SendMessageButton.Enabled = !(_channelCurrent is null);
+                UpdateSendEnabled();
             }
         }
 
@@ -368,6 +368,28 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
 
             foreach (Control ctl in MessagesLayout.GetChildren().Where(ctl => ctl.Tag == msg))
                 MessagesLayout.Controls.Remove(ctl);
+        }
+
+        private void SendMessageButton_Click(object sender, EventArgs e) {
+            try {
+                _channelCurrent.PostMessage(new Core.Structures.MessageSignedData() {
+                    SendTime = DateTime.Now.Ticks,
+                    Text = MessageTextBox.Text
+                });
+            } catch (Exception ex) {
+                MessageBox.Show(this, $"Error sending message:\r\n{ex}", "Error sending",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            MessageTextBox.Clear();
+        }
+
+        private void UpdateSendEnabled() {
+            SendMessageButton.Enabled = (MessageTextBox.Text.Trim().Length > 0) && !(_channelCurrent is null);
+        }
+
+        private void MessageTextBox_TextChanged(object sender, EventArgs e) {
+            UpdateSendEnabled();
         }
     }
 }

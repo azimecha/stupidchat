@@ -17,19 +17,23 @@ namespace Azimecha.Stupidchat.Core {
         private SymmetricEncryptionDecorator _mcSymmetric;
         private SigningChallengeDecorator _mcSigning;
         private byte[] _arrConnectionKey;
+        private byte[] _arrSigningKey;
         private Cryptography.ISigningAlgorithm _algoSigning;
         private WeakReference<IDisposalObserver<NetworkConnection>> _cbDisposed;
 
         public NetworkConnection(TcpClient client, bool bDisposeTCPClient, ReadOnlySpan<byte> spanPrivateKey) {
+            Cryptography.IAsymmetricCipher cipher = new Cryptography.X25519Cipher();
+
             _client = client;
             _bDisposeTCPClient = bDisposeTCPClient;
             _algoSigning = new Cryptography.RFC8032Algorithm();
-            _arrConnectionKey = new byte[_algoSigning.PrivateKeySize];
+            _arrConnectionKey = new byte[cipher.PrivateKeySize];
             new Cryptography.Dotnet6CryptoRNG().Fill(_arrConnectionKey);
+            _arrSigningKey = spanPrivateKey.ToArray();
 
             _stream = client.GetStream();
             _mcBase = new StreamMessageAdaptor(_stream, false);
-            _mcAsymmetric = new AsymmetricKeyExchangeDecorator(_mcBase, false, new Cryptography.X25519Cipher(), spanPrivateKey);
+            _mcAsymmetric = new AsymmetricKeyExchangeDecorator(_mcBase, false, cipher, _arrConnectionKey);
         }
 
         public static Cryptography.ISigningAlgorithm CreateSigningAlgorithmInstance()
@@ -78,7 +82,7 @@ namespace Azimecha.Stupidchat.Core {
 
         private void CreateAdditionalDecorators() {
             _mcSymmetric = new SymmetricEncryptionDecorator(_mcAsymmetric, false, new Cryptography.XChaCha20Poly1305Cipher(), _mcAsymmetric.SymmetricKey);
-            _mcSigning = new SigningChallengeDecorator(_mcSymmetric, false, new Cryptography.RFC8032Algorithm(), _arrConnectionKey);
+            _mcSigning = new SigningChallengeDecorator(_mcSymmetric, false, new Cryptography.RFC8032Algorithm(), _arrSigningKey);
         }
 
         public byte[] ReceiveMesssage() => Frontend.ReceiveMesssage();

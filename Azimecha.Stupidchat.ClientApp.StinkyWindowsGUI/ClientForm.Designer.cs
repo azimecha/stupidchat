@@ -209,6 +209,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             this.MessageTextBox.Name = "MessageTextBox";
             this.MessageTextBox.Size = new System.Drawing.Size(332, 16);
             this.MessageTextBox.TabIndex = 0;
+            this.MessageTextBox.TextChanged += new System.EventHandler(this.MessageTextBox_TextChanged);
             // 
             // SendMessageButton
             // 
@@ -222,6 +223,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             this.SendMessageButton.TabIndex = 1;
             this.SendMessageButton.Text = "Send";
             this.SendMessageButton.UseVisualStyleBackColor = false;
+            this.SendMessageButton.Click += new System.EventHandler(this.SendMessageButton_Click);
             // 
             // MembersListView
             // 
