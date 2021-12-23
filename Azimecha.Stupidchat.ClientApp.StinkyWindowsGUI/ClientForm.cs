@@ -52,6 +52,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
                 System.Text.Encoding.UTF8.GetBytes(strUsername));
 
             _client = new Client.ChatClient(arrPrivateKey);
+            _client.DisconnectedFromServer += Client_DisconnectedFromServer;
             _client.ChannelAdded += Client_ChannelAdded;
             _client.ChannelInfoChanged += Client_ChannelInfoChanged;
             _client.ChannelRemoved += Client_ChannelRemoved;
@@ -183,13 +184,10 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             if (!(e.Error is null)) {
                 MessageBox.Show(this, $"Error connecting to server:\n\n{e.Error}", "Error", MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
-                MainStatusStrip.Text = $"Error connecting to server: {e.Error.Message} ({e.Error.GetType().FullName})";
-                return;
-            }
-
-            if (!(e.Result is null)) {
+                MainStatusLabel.Text = $"Error connecting to server: {e.Error.Message} ({e.Error.GetType().FullName})";
+            } else {
                 ConnectionResult result = (ConnectionResult)e.Result;
-                MainStatusStrip.Text = $"Connected to {result.Server.ID.ToHexString()} on {result.Server.Address}:{result.Server.Port}";
+                MainStatusLabel.Text = $"Connected to {result.Server.ID.ToHexString()} on {result.Server.Address}:{result.Server.Port}";
 
                 AddServer(result.Server, result.Channels);
 
@@ -281,6 +279,14 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             }
 
             return lstNodes.ToArray();
+        }
+
+        private void Client_DisconnectedFromServer(Client.IServer server) {
+            CurrentChannel = null;
+            CurrentServer = null;
+
+            foreach (TreeNode node in GetAllTreeNodes().Where(node => node.Tag == server))
+                node.Remove();
         }
 
         private void Client_ChannelAdded(Client.IChannel chan) {

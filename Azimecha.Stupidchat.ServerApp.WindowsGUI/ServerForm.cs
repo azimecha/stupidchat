@@ -302,6 +302,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
         }
 
         private void ChannelMessagesList_SelectedIndexChanged(object sender, EventArgs e) {
+            MessageDeleteButton.Enabled = ChannelMessagesList.SelectedIndex >= 0;
         }
 
         private void ChannelMessagesList_MouseDoubleClick(object sender, MouseEventArgs e) {

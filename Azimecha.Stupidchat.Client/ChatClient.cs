@@ -60,6 +60,7 @@ namespace Azimecha.Stupidchat.Client {
                 throw;
             }
 
+            ConnectedToServer?.Invoke(server);
             return server;
         }
 
@@ -82,6 +83,24 @@ namespace Azimecha.Stupidchat.Client {
 
         private static string IDToString(ReadOnlySpan<byte> spanKey) => spanKey.ToHexString();
 
+        private void OnDisconnected(Server server) {
+            string strID = IDToString(server.ID);
+            bool bDidRemove = false;
+
+            lock (_dicServers) {
+                if (_dicServers.ContainsKey(strID)) {
+                    _dicServers.Remove(strID);
+                    bDidRemove = true;
+                }
+            }
+
+            if (bDidRemove)
+                DisconnectedFromServer?.Invoke(server);
+        }
+
+        public event Action<IServer> ConnectedToServer;
+        public event Action<IServer> DisconnectedFromServer;
+
         public event Action<IMember> MemberJoined;
         public event Action<IMember> MemberInfoChanged;
         public event Action<IMember> MemberLeft;
@@ -93,13 +112,14 @@ namespace Azimecha.Stupidchat.Client {
         public event Action<IMessage> MessagePosted;
         public event Action<IMessage> MessageDeleted;
 
-        private class Server : IServer, IDisposable, ProtocolConnection.IErrorProcessor, ProtocolConnection.INotificationProcessor {
+        private class Server : IServer, IDisposable, ProtocolConnection.IErrorProcessor, ProtocolConnection.INotificationProcessor, IDisposalObserver<ProtocolConnection> {
             private ChatClient _cclient;
             private ProtocolConnection _conn;
             private IDictionary<string, Member> _dicMembers;
             private IDictionary<long, Channel> _dicChannels;
             private ServerInfo _info;
             private object _objInfoMutex;
+            private byte[] _arrServerPublicKey;
 
             internal Server(ChatClient cclient, string strAddress, int nPort, ReadOnlySpan<byte> spanPrivateKey) {
                 _cclient = cclient;
@@ -111,11 +131,14 @@ namespace Azimecha.Stupidchat.Client {
                     _conn = new ProtocolConnection(client, true, spanPrivateKey);
                     _conn.ErrorProcessor = this;
                     _conn.NotificationProcessor = this;
+                    _conn.DisposalObserver = this;
                     _conn.Start();
                 } catch (Exception) {
                     client.Dispose();
                     throw;
                 }
+
+                _arrServerPublicKey = _conn.PartnerPublicKey.ToArray();
 
                 _info = _conn.PerformRequest<ServerInfoResponse>(new ServerInfoRequest()).Info;
                 _objInfoMutex = new object();
@@ -134,7 +157,7 @@ namespace Azimecha.Stupidchat.Client {
 
             public string Address { get; private set; }
             public int Port { get; private set; }
-            public ReadOnlySpan<byte> ID => _conn.PartnerPublicKey;
+            public ReadOnlySpan<byte> ID => _arrServerPublicKey;
 
             public ServerInfo Info {
                 get {
@@ -152,6 +175,7 @@ namespace Azimecha.Stupidchat.Client {
             public void Dispose() {
                 Interlocked.Exchange(ref _conn, null)?.Dispose();
                 _dicMembers = null;
+                _dicChannels = null;
             }
 
             void ProtocolConnection.IErrorProcessor.ProcessError(Exception ex) {
@@ -294,6 +318,11 @@ namespace Azimecha.Stupidchat.Client {
 
                 return memb;
             }
+
+            void IDisposalObserver<ProtocolConnection>.OnObjectDisposed(ProtocolConnection obj) {
+                _cclient?.OnDisconnected(this);
+                Dispose();
+            }
         }
 
         private class Member : IMember {
@@ -343,6 +372,7 @@ namespace Azimecha.Stupidchat.Client {
                 _objChannelMutex = new object();
                 _objDownloadMessagesMutex = new object();
                 _dicMessages = new ConcurrentDictionary<long, IMessage>();
+                _nHighestMessageIndex = -1;
 
                 // try to get the last message posted
                 MessagesBeforeResponse resp = _server.Connection.PerformRequest<MessagesBeforeResponse>(new MessagesBeforeRequest() {
@@ -435,7 +465,7 @@ namespace Azimecha.Stupidchat.Client {
 
                 public MessageEnumerator(Channel chan) { 
                     _chan = chan;
-                    _nCurIndex = chan._nHighestMessageIndex;
+                    _nCurIndex = -1;
                 }
 
                 public IMessage Current => _msgCurrent;
