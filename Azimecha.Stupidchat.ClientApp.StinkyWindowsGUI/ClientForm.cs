@@ -62,6 +62,15 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             _client.MessageDeleted += Client_MessageDeleted;
             _client.MessagePosted += Client_MessagePosted;
 
+            Core.Structures.UserProfile profile = new();
+
+            if ((Properties.Settings.Default.Profile?.Length ?? 0) > 0)
+                profile = Newtonsoft.Json.JsonConvert.DeserializeObject<Core.Structures.UserProfile>
+                    (Properties.Settings.Default.Profile);
+
+            profile.Username = strUsername;
+            _client.MyProfile = profile;
+
             if ((Properties.Settings.Default.Servers?.Count ?? 0) > 0) {
                 MainStatusLabel.Text = "Connecting to servers...";
                 SavedConnectionsWorker.RunWorkerAsync(Properties.Settings.Default.Servers);
@@ -80,6 +89,8 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
                 if (!(_serverCurrent is null))
                     foreach (Client.IMember memb in _serverCurrent.Members)
                         MembersListView.Items.Add(new ListViewItem() { Text = memb.Info.GetName(), Tag = memb });
+
+                ServerDisconnectButton.Enabled = ServerSetNickButton.Enabled = !(_serverCurrent is null);
             }
         }
 
@@ -130,8 +141,8 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
                 }
 
                 NewConnectionWorker.RunWorkerAsync(endpoint);
-                ConnectButton.Text = $"Connecting to {strAddress}";
-                ConnectButton.Enabled = false;
+                ServerConnectButton.Text = $"Connecting to {strAddress}";
+                ServerConnectButton.Enabled = false;
             }
         }
 
@@ -194,8 +205,8 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
                 Properties.Settings.Default.Servers.Add(_strNewServerAddress);
             }
 
-            ConnectButton.Text = "Connect to Server";
-            ConnectButton.Enabled = true;
+            ServerConnectButton.Text = "Connect";
+            ServerConnectButton.Enabled = true;
         }
 
         private void ServersTreeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
@@ -216,7 +227,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
         }
 
         private void SavedConnectionsWorker_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e) {
-            foreach (string strAddress in (IEnumerable<string>)e.Argument) {
+            foreach (string strAddress in (System.Collections.Specialized.StringCollection)e.Argument) {
                 ConnectionAttemptResult result = new ConnectionAttemptResult() { Address = strAddress };
                 try {
                     BeginInvoke(() => MainStatusLabel.Text = $"Connecting to {strAddress}...");
@@ -343,8 +354,9 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
                 return;
             }
 
-            ListViewItem itemMember = GetAllMemberItems().Where(item => item.Tag == memb).First();
-            itemMember.Text = memb.Info.GetName();
+            ListViewItem itemMember = GetAllMemberItems().Where(item => item.Tag == memb).FirstOrDefault();
+            if (!(itemMember is null))
+                itemMember.Text = memb.Info.GetName();
         }
 
         private void Client_MemberLeft(Client.IMember memb) {
@@ -396,6 +408,64 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
 
         private void MessageTextBox_TextChanged(object sender, EventArgs e) {
             UpdateSendEnabled();
+        }
+
+        private void ServerDisconnectButton_Click(object sender, EventArgs e) {
+            _serverCurrent?.Disconnect();
+        }
+
+        private void ServerSetNickButton_Click(object sender, EventArgs e) {
+            if (_serverCurrent is null) return;
+            string strOldNickname = _serverCurrent.Me.Info.Nickname;
+
+            string strNewNickname = Microsoft.VisualBasic.Interaction.InputBox(
+                $"Enter the nickname you would like to use on {_serverCurrent.Info.Name}.",
+                "Choose Nickname", "");
+
+            if ((strNewNickname?.Length ?? 0) > 0)
+                _serverCurrent.SetNickname(strNewNickname);
+        }
+
+        private void UserSetNameButton_Click(object sender, EventArgs e) {
+            Core.Structures.UserProfile profile = _client.MyProfile;
+            profile.DisplayName = Microsoft.VisualBasic.Interaction.InputBox(
+                "Enter the display name you would like to use.", "Choose Name",
+                profile.DisplayName ?? "");
+            UpdateUserProfile(profile);
+        }
+
+        private void UserSetBioButton_Click(object sender, EventArgs e) {
+            Core.Structures.UserProfile profile = _client.MyProfile;
+            profile.Bio = Microsoft.VisualBasic.Interaction.InputBox(
+                "Enter the bio text you would like to have on your user profile.",
+                "Choose Bio", profile.Bio ?? "");
+            UpdateUserProfile(profile);
+        }
+
+        private void UserSetAvatarButton_Click(object sender, EventArgs e) {
+            Core.Structures.UserProfile profile = _client.MyProfile;
+            profile.AvatarURL = Microsoft.VisualBasic.Interaction.InputBox(
+                "Paste or enter the URL to the avatar image you would like to use.",
+                "Choose Avatar", profile.AvatarURL ?? "");
+            UpdateUserProfile(profile);
+        }
+
+        private void UserLogOutButton_Click(object sender, EventArgs e) {
+            if (MessageBox.Show(this, "Are you sure you want to log out? " +
+                "The application will exit and you will need to enter your " +
+                "username and password when you open it again.",
+                "Confirm Log Out", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.OK)
+            {
+                Meziantou.Framework.Win32.CredentialManager.DeleteCredential(APP_CODENAME);
+                _client?.Dispose();
+                Environment.Exit(0);
+            }
+        }
+
+        private void UpdateUserProfile(Core.Structures.UserProfile profileNew) {
+            _client.MyProfile = profileNew;
+            Properties.Settings.Default.Profile = Newtonsoft.Json.JsonConvert.SerializeObject(profileNew);
+            Properties.Settings.Default.Save();
         }
     }
 }

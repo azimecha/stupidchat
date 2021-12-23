@@ -12,10 +12,14 @@ namespace Azimecha.Stupidchat.Client {
         ServerInfo Info { get; }
         IEnumerable<IMember> Members { get; }
         IEnumerable<IChannel> Channels { get; }
+        IMember Me { get; }
 
         IChannel FindChannel(long nChannelID);
         IChannel TryFindChannel(long nChannelID);
         IMember FindMember(ReadOnlySpan<byte> spanPublicKey);
         IMember TryFindMember(ReadOnlySpan<byte> spanPublicKey);
+
+        void Disconnect();
+        void SetNickname(string strNickname);
     }
 }

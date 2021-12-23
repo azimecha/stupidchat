@@ -17,18 +17,38 @@ namespace Azimecha.Stupidchat.Client {
         private IDictionary<string, User> _dicUsers;
         private byte[] _arrPrivateKey;
         private byte[] _arrPublicKey;
+        private UserProfile _profileMe;
+        private object _objMyProfileMutex;
 
         public ChatClient(ReadOnlySpan<byte> spanPrivateKey) {
             _dicServers = new Dictionary<string, Server>();
             _dicUsers = new Dictionary<string, User>();
             _arrPrivateKey = spanPrivateKey.ToArray();
             _arrPublicKey = NetworkConnection.CreateSigningAlgorithmInstance().GetPublicKey(_arrPrivateKey);
+            _objMyProfileMutex = new object();
         }
 
         public IEnumerable<IServer> Servers {
             get {
                 lock (_dicServers)
                     return _dicServers.Values.ToArray();
+            }
+        }
+
+        public UserProfile MyProfile {
+            get {
+                lock (_objMyProfileMutex)
+                    return _profileMe;
+            }
+            set {
+                lock (_objMyProfileMutex)
+                    _profileMe = value;
+
+                SignedStructSerializer.SignedData data = SignedStructSerializer.Serialize(_profileMe,
+                    _arrPublicKey, _arrPrivateKey);
+
+                Servers.AsParallel().ForAll(server => ((Server)server).Connection.PerformRequest(
+                    new UpdateProfileRequest() { SignedData = data.Data, Signature = data.Signature }));
             }
         }
 
@@ -153,6 +173,10 @@ namespace Azimecha.Stupidchat.Client {
 
                 _dicNotifProcessors = ProcessorAttribute.BindProcessorsList<Server, Core.Protocol.NotificationMessage>
                     (this, _dicNotifProcessorMethods);
+
+                SignedStructSerializer.SignedData dataProfile = SignedStructSerializer.Serialize(_cclient._profileMe,
+                    _cclient._arrPublicKey, _cclient._arrPrivateKey);
+                _conn.PerformRequest(new UpdateProfileRequest() { SignedData = dataProfile.Data, Signature = dataProfile.Signature });
             }
 
             public string Address { get; private set; }
@@ -168,6 +192,17 @@ namespace Azimecha.Stupidchat.Client {
 
             public IEnumerable<IMember> Members => _dicMembers.Values;
             public IEnumerable<IChannel> Channels => _dicChannels.Values;
+
+            public IMember Me => FindMember(_cclient._arrPublicKey);
+
+            public void Disconnect() {
+                Dispose();
+            }
+
+            // TODO: move this to a better place
+            public void SetNickname(string strNickname) {
+                Connection.PerformRequest(new SetNicknameRequest() { Nickname = strNickname });
+            }
 
             internal ChatClient AssociatedChatClient => _cclient;
             internal ProtocolConnection Connection => _conn;

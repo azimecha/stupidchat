@@ -33,5 +33,17 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI.Properties {
                 this["Servers"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string Profile {
+            get {
+                return ((string)(this["Profile"]));
+            }
+            set {
+                this["Profile"] = value;
+            }
+        }
     }
 }
