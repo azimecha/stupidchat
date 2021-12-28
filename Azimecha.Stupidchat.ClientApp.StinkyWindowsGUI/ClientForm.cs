@@ -78,6 +78,8 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
 
             if (Properties.Settings.Default.Servers is null)
                 Properties.Settings.Default.Servers = new System.Collections.Specialized.StringCollection();
+
+            ServerImageList.Images.Add(DEFAULT_IMAGE, Properties.Resources.server2_16);
         }
 
         public Client.IServer CurrentServer {
@@ -88,7 +90,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
 
                 if (!(_serverCurrent is null))
                     foreach (Client.IMember memb in _serverCurrent.Members)
-                        MembersListView.Items.Add(new ListViewItem() { Text = memb.Info.GetName(), Tag = memb });
+                        AddMemberItem(memb);
 
                 ServerDisconnectButton.Enabled = ServerSetNickButton.Enabled = !(_serverCurrent is null);
             }
@@ -98,7 +100,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             get => _channelCurrent;
             set {
                 _channelCurrent = value;
-                MessagesLayout.Controls.Clear();
+                ClearMemberItems();
 
                 if (!(_channelCurrent is null))
                     foreach (Client.IMessage msg in _channelCurrent.Messages.Take(INITIAL_MESSAGES_LOAD_COUNT))
@@ -106,6 +108,27 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
 
                 UpdateSendEnabled();
             }
+        }
+
+        private const string DEFAULT_IMAGE = "DEFAULT";
+
+        private void AddMemberItem(Client.IMember memb) {
+            ListViewItem item = new ListViewItem() { Text = memb.Info.GetName(), Tag = memb, ImageKey = DEFAULT_IMAGE };
+
+            System.IO.Stream stmAvatar = memb.User.OpenAvatar();
+            if (!(stmAvatar is null)) {
+                string strImageKey = memb.User.PublicKey.ToHexString();
+                UserImageList.Images.Add(strImageKey, new System.Drawing.Bitmap(stmAvatar));
+                item.ImageKey = strImageKey;
+            }
+
+            MembersListView.Items.Add(item);
+        }
+
+        private void ClearMemberItems() {
+            MembersListView.Items.Clear();
+            UserImageList.Images.Clear();
+            UserImageList.Images.Add(DEFAULT_IMAGE, Properties.Resources.nft32);
         }
 
         private void AddMessageControl(Client.IMessage msg) {
@@ -228,6 +251,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
 
         private void SavedConnectionsWorker_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e) {
             foreach (string strAddress in (System.Collections.Specialized.StringCollection)e.Argument) {
+                if ((strAddress?.Length ?? 0) == 0) continue;
                 ConnectionAttemptResult result = new ConnectionAttemptResult() { Address = strAddress };
                 try {
                     BeginInvoke(() => MainStatusLabel.Text = $"Connecting to {strAddress}...");
@@ -260,8 +284,16 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
         private void AddServer(Client.IServer server, IEnumerable<Client.IChannel> enuChannels) {
             TreeNode nodeServer = new TreeNode() {
                 Text = server.Info.Name,
-                Tag = server
+                Tag = server,
+                ImageKey = DEFAULT_IMAGE
             };
+
+            /*System.IO.Stream stmIcon = server.OpenIcon();
+            if (!(stmIcon is null)) {
+                string strIconKey = server.ID.ToHexString();
+                ServerImageList.Images.Add(strIconKey, new System.Drawing.Bitmap(stmIcon));
+                nodeServer.ImageKey = strIconKey;
+            }*/
 
             foreach (Client.IChannel chan in enuChannels) {
                 TreeNode nodeChannel = new TreeNode() {
@@ -339,13 +371,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
         }
 
         private void Client_MemberJoined(Client.IMember memb) {
-            ListViewItem itemNew = new ListViewItem() {
-                Text = memb.Info.GetName(),
-                ToolTipText = memb.Info.PublicKey.ToHexString(),
-                Tag = memb
-            };
-
-            MembersListView.Items.Add(itemNew);
+            AddMemberItem(memb);
         }
 
         private void Client_MemberInfoChanged(Client.IMember memb) {
@@ -466,6 +492,12 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             _client.MyProfile = profileNew;
             Properties.Settings.Default.Profile = Newtonsoft.Json.JsonConvert.SerializeObject(profileNew);
             Properties.Settings.Default.Save();
+        }
+
+        private void ClientForm_FormClosed(object sender, FormClosedEventArgs e) {
+            _client?.Dispose();
+            _client = null;
+            GC.Collect();
         }
     }
 }

@@ -30,18 +30,27 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.StatusLabelLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.StatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.TopToolStrip = new System.Windows.Forms.ToolStrip();
+            this.ServerInfoDropdown = new System.Windows.Forms.ToolStripDropDownButton();
+            this.ServerNameItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ServerDescItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ServerIconItem = new System.Windows.Forms.ToolStripMenuItem();
             this.StartStopButton = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.MemberPowerDropdown = new System.Windows.Forms.ToolStripDropDownButton();
             this.PowerReducedItem = new System.Windows.Forms.ToolStripMenuItem();
             this.PowerNormalItem = new System.Windows.Forms.ToolStripMenuItem();
             this.PowerModeratorItem = new System.Windows.Forms.ToolStripMenuItem();
             this.PowerAdministratorItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.MemberRemoveButton = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.ChannelCreateButton = new System.Windows.Forms.ToolStripButton();
             this.ModifyChannelDropdown = new System.Windows.Forms.ToolStripDropDownButton();
             this.ChannelNameItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ChannelDescriptionItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ChannelDeleteButton = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.LogClearButton = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.MessageDeleteButton = new System.Windows.Forms.ToolStripButton();
             this.RefreshButton = new System.Windows.Forms.ToolStripButton();
             this.MainSplit = new System.Windows.Forms.SplitContainer();
@@ -59,7 +68,6 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.ChannelMessagesLayout = new System.Windows.Forms.TableLayoutPanel();
             this.MessagesLabel = new System.Windows.Forms.Label();
             this.ChannelMessagesList = new System.Windows.Forms.ListBox();
-            this.MemberRemoveButton = new System.Windows.Forms.ToolStripButton();
             this.BottomStatusStrip.SuspendLayout();
             this.TopToolStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.MainSplit)).BeginInit();
@@ -85,9 +93,9 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.BottomStatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.StatusLabelLabel,
             this.StatusLabel});
-            this.BottomStatusStrip.Location = new System.Drawing.Point(0, 428);
+            this.BottomStatusStrip.Location = new System.Drawing.Point(0, 521);
             this.BottomStatusStrip.Name = "BottomStatusStrip";
-            this.BottomStatusStrip.Size = new System.Drawing.Size(800, 22);
+            this.BottomStatusStrip.Size = new System.Drawing.Size(933, 22);
             this.BottomStatusStrip.TabIndex = 0;
             this.BottomStatusStrip.Text = "statusStrip1";
             // 
@@ -106,21 +114,60 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             // TopToolStrip
             // 
             this.TopToolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ServerInfoDropdown,
             this.StartStopButton,
+            this.toolStripSeparator1,
             this.MemberPowerDropdown,
             this.MemberRemoveButton,
+            this.toolStripSeparator2,
             this.ChannelCreateButton,
             this.ModifyChannelDropdown,
             this.ChannelDeleteButton,
+            this.toolStripSeparator3,
             this.LogClearButton,
+            this.toolStripSeparator4,
             this.MessageDeleteButton,
             this.RefreshButton});
             this.TopToolStrip.Location = new System.Drawing.Point(0, 0);
             this.TopToolStrip.Name = "TopToolStrip";
             this.TopToolStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.TopToolStrip.Size = new System.Drawing.Size(800, 25);
+            this.TopToolStrip.Size = new System.Drawing.Size(933, 25);
             this.TopToolStrip.TabIndex = 1;
             this.TopToolStrip.Text = "toolStrip1";
+            // 
+            // ServerInfoDropdown
+            // 
+            this.ServerInfoDropdown.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.ServerInfoDropdown.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ServerNameItem,
+            this.ServerDescItem,
+            this.ServerIconItem});
+            this.ServerInfoDropdown.Image = ((System.Drawing.Image)(resources.GetObject("ServerInfoDropdown.Image")));
+            this.ServerInfoDropdown.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.ServerInfoDropdown.Name = "ServerInfoDropdown";
+            this.ServerInfoDropdown.Size = new System.Drawing.Size(95, 22);
+            this.ServerInfoDropdown.Text = "Set Server Info";
+            // 
+            // ServerNameItem
+            // 
+            this.ServerNameItem.Name = "ServerNameItem";
+            this.ServerNameItem.Size = new System.Drawing.Size(180, 22);
+            this.ServerNameItem.Text = "Name";
+            this.ServerNameItem.Click += new System.EventHandler(this.ServerNameItem_Click);
+            // 
+            // ServerDescItem
+            // 
+            this.ServerDescItem.Name = "ServerDescItem";
+            this.ServerDescItem.Size = new System.Drawing.Size(180, 22);
+            this.ServerDescItem.Text = "Description";
+            this.ServerDescItem.Click += new System.EventHandler(this.ServerDescItem_Click);
+            // 
+            // ServerIconItem
+            // 
+            this.ServerIconItem.Name = "ServerIconItem";
+            this.ServerIconItem.Size = new System.Drawing.Size(180, 22);
+            this.ServerIconItem.Text = "Icon URL";
+            this.ServerIconItem.Click += new System.EventHandler(this.ServerIconItem_Click);
             // 
             // StartStopButton
             // 
@@ -131,6 +178,11 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.StartStopButton.Size = new System.Drawing.Size(70, 22);
             this.StartStopButton.Text = "Start Server";
             this.StartStopButton.Click += new System.EventHandler(this.StartStopButton_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 25);
             // 
             // MemberPowerDropdown
             // 
@@ -150,30 +202,46 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             // PowerReducedItem
             // 
             this.PowerReducedItem.Name = "PowerReducedItem";
-            this.PowerReducedItem.Size = new System.Drawing.Size(180, 22);
+            this.PowerReducedItem.Size = new System.Drawing.Size(147, 22);
             this.PowerReducedItem.Text = "Reduced";
             this.PowerReducedItem.Click += new System.EventHandler(this.PowerReducedItem_Click);
             // 
             // PowerNormalItem
             // 
             this.PowerNormalItem.Name = "PowerNormalItem";
-            this.PowerNormalItem.Size = new System.Drawing.Size(180, 22);
+            this.PowerNormalItem.Size = new System.Drawing.Size(147, 22);
             this.PowerNormalItem.Text = "Normal";
             this.PowerNormalItem.Click += new System.EventHandler(this.PowerNormalItem_Click);
             // 
             // PowerModeratorItem
             // 
             this.PowerModeratorItem.Name = "PowerModeratorItem";
-            this.PowerModeratorItem.Size = new System.Drawing.Size(180, 22);
+            this.PowerModeratorItem.Size = new System.Drawing.Size(147, 22);
             this.PowerModeratorItem.Text = "Moderator";
             this.PowerModeratorItem.Click += new System.EventHandler(this.PowerModeratorItem_Click);
             // 
             // PowerAdministratorItem
             // 
             this.PowerAdministratorItem.Name = "PowerAdministratorItem";
-            this.PowerAdministratorItem.Size = new System.Drawing.Size(180, 22);
+            this.PowerAdministratorItem.Size = new System.Drawing.Size(147, 22);
             this.PowerAdministratorItem.Text = "Administrator";
             this.PowerAdministratorItem.Click += new System.EventHandler(this.PowerAdministratorItem_Click);
+            // 
+            // MemberRemoveButton
+            // 
+            this.MemberRemoveButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.MemberRemoveButton.Enabled = false;
+            this.MemberRemoveButton.Image = ((System.Drawing.Image)(resources.GetObject("MemberRemoveButton.Image")));
+            this.MemberRemoveButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.MemberRemoveButton.Name = "MemberRemoveButton";
+            this.MemberRemoveButton.Size = new System.Drawing.Size(102, 22);
+            this.MemberRemoveButton.Text = "Remove Member";
+            this.MemberRemoveButton.Click += new System.EventHandler(this.MemberRemoveButton_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 25);
             // 
             // ChannelCreateButton
             // 
@@ -224,6 +292,11 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.ChannelDeleteButton.Text = "Delete Channel";
             this.ChannelDeleteButton.Click += new System.EventHandler(this.ChannelDeleteButton_Click);
             // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 25);
+            // 
             // LogClearButton
             // 
             this.LogClearButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
@@ -233,6 +306,11 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.LogClearButton.Size = new System.Drawing.Size(61, 22);
             this.LogClearButton.Text = "Clear Log";
             this.LogClearButton.Click += new System.EventHandler(this.LogClearButton_Click);
+            // 
+            // toolStripSeparator4
+            // 
+            this.toolStripSeparator4.Name = "toolStripSeparator4";
+            this.toolStripSeparator4.Size = new System.Drawing.Size(6, 25);
             // 
             // MessageDeleteButton
             // 
@@ -272,8 +350,8 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             // MainSplit.Panel2
             // 
             this.MainSplit.Panel2.Controls.Add(this.RightSplit);
-            this.MainSplit.Size = new System.Drawing.Size(800, 403);
-            this.MainSplit.SplitterDistance = 266;
+            this.MainSplit.Size = new System.Drawing.Size(933, 496);
+            this.MainSplit.SplitterDistance = 310;
             this.MainSplit.TabIndex = 2;
             // 
             // LeftSplit
@@ -293,8 +371,8 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             // LeftSplit.Panel2
             // 
             this.LeftSplit.Panel2.Controls.Add(this.ChannelsLayout);
-            this.LeftSplit.Size = new System.Drawing.Size(266, 403);
-            this.LeftSplit.SplitterDistance = 203;
+            this.LeftSplit.Size = new System.Drawing.Size(310, 496);
+            this.LeftSplit.SplitterDistance = 249;
             this.LeftSplit.TabIndex = 0;
             // 
             // UsersLayout
@@ -310,7 +388,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.UsersLayout.RowCount = 2;
             this.UsersLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
             this.UsersLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.UsersLayout.Size = new System.Drawing.Size(262, 199);
+            this.UsersLayout.Size = new System.Drawing.Size(306, 245);
             this.UsersLayout.TabIndex = 0;
             // 
             // MembersLabel
@@ -322,7 +400,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.MembersLabel.Margin = new System.Windows.Forms.Padding(0);
             this.MembersLabel.Name = "MembersLabel";
             this.MembersLabel.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.MembersLabel.Size = new System.Drawing.Size(262, 24);
+            this.MembersLabel.Size = new System.Drawing.Size(306, 24);
             this.MembersLabel.TabIndex = 0;
             this.MembersLabel.Text = "Members";
             this.MembersLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -336,7 +414,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.MembersList.Location = new System.Drawing.Point(0, 24);
             this.MembersList.Margin = new System.Windows.Forms.Padding(0);
             this.MembersList.Name = "MembersList";
-            this.MembersList.Size = new System.Drawing.Size(262, 175);
+            this.MembersList.Size = new System.Drawing.Size(306, 221);
             this.MembersList.TabIndex = 1;
             this.MembersList.SelectedIndexChanged += new System.EventHandler(this.MembersList_SelectedIndexChanged);
             this.MembersList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.MembersList_MouseDoubleClick);
@@ -354,7 +432,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.ChannelsLayout.RowCount = 2;
             this.ChannelsLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
             this.ChannelsLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.ChannelsLayout.Size = new System.Drawing.Size(262, 192);
+            this.ChannelsLayout.Size = new System.Drawing.Size(306, 239);
             this.ChannelsLayout.TabIndex = 1;
             // 
             // ChannelsList
@@ -366,7 +444,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.ChannelsList.Location = new System.Drawing.Point(0, 24);
             this.ChannelsList.Margin = new System.Windows.Forms.Padding(0);
             this.ChannelsList.Name = "ChannelsList";
-            this.ChannelsList.Size = new System.Drawing.Size(262, 168);
+            this.ChannelsList.Size = new System.Drawing.Size(306, 215);
             this.ChannelsList.TabIndex = 2;
             this.ChannelsList.SelectedIndexChanged += new System.EventHandler(this.ChannelsList_SelectedIndexChanged);
             this.ChannelsList.SelectedValueChanged += new System.EventHandler(this.ChannelsList_SelectedValueChanged);
@@ -381,7 +459,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.ChannelsLabel.Margin = new System.Windows.Forms.Padding(0);
             this.ChannelsLabel.Name = "ChannelsLabel";
             this.ChannelsLabel.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.ChannelsLabel.Size = new System.Drawing.Size(262, 24);
+            this.ChannelsLabel.Size = new System.Drawing.Size(306, 24);
             this.ChannelsLabel.TabIndex = 1;
             this.ChannelsLabel.Text = "Channels";
             this.ChannelsLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -402,8 +480,8 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             // RightSplit.Panel2
             // 
             this.RightSplit.Panel2.Controls.Add(this.ChannelMessagesLayout);
-            this.RightSplit.Size = new System.Drawing.Size(530, 403);
-            this.RightSplit.SplitterDistance = 176;
+            this.RightSplit.Size = new System.Drawing.Size(619, 496);
+            this.RightSplit.SplitterDistance = 216;
             this.RightSplit.TabIndex = 0;
             // 
             // LogMessagesLayout
@@ -419,7 +497,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.LogMessagesLayout.RowCount = 2;
             this.LogMessagesLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
             this.LogMessagesLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.LogMessagesLayout.Size = new System.Drawing.Size(526, 172);
+            this.LogMessagesLayout.Size = new System.Drawing.Size(615, 212);
             this.LogMessagesLayout.TabIndex = 1;
             // 
             // LogLabel
@@ -431,7 +509,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.LogLabel.Margin = new System.Windows.Forms.Padding(0);
             this.LogLabel.Name = "LogLabel";
             this.LogLabel.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.LogLabel.Size = new System.Drawing.Size(526, 24);
+            this.LogLabel.Size = new System.Drawing.Size(615, 24);
             this.LogLabel.TabIndex = 0;
             this.LogLabel.Text = "Log";
             this.LogLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -445,7 +523,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.LogMessageList.Location = new System.Drawing.Point(0, 24);
             this.LogMessageList.Margin = new System.Windows.Forms.Padding(0);
             this.LogMessageList.Name = "LogMessageList";
-            this.LogMessageList.Size = new System.Drawing.Size(526, 148);
+            this.LogMessageList.Size = new System.Drawing.Size(615, 188);
             this.LogMessageList.TabIndex = 1;
             this.LogMessageList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.LogMessageList_MouseDoubleClick);
             // 
@@ -462,7 +540,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.ChannelMessagesLayout.RowCount = 2;
             this.ChannelMessagesLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
             this.ChannelMessagesLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.ChannelMessagesLayout.Size = new System.Drawing.Size(526, 219);
+            this.ChannelMessagesLayout.Size = new System.Drawing.Size(615, 272);
             this.ChannelMessagesLayout.TabIndex = 1;
             // 
             // MessagesLabel
@@ -474,7 +552,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.MessagesLabel.Margin = new System.Windows.Forms.Padding(0);
             this.MessagesLabel.Name = "MessagesLabel";
             this.MessagesLabel.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.MessagesLabel.Size = new System.Drawing.Size(526, 24);
+            this.MessagesLabel.Size = new System.Drawing.Size(615, 24);
             this.MessagesLabel.TabIndex = 0;
             this.MessagesLabel.Text = "Messages (select channel to display)";
             this.MessagesLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -488,27 +566,16 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             this.ChannelMessagesList.Location = new System.Drawing.Point(0, 24);
             this.ChannelMessagesList.Margin = new System.Windows.Forms.Padding(0);
             this.ChannelMessagesList.Name = "ChannelMessagesList";
-            this.ChannelMessagesList.Size = new System.Drawing.Size(526, 195);
+            this.ChannelMessagesList.Size = new System.Drawing.Size(615, 248);
             this.ChannelMessagesList.TabIndex = 1;
             this.ChannelMessagesList.SelectedIndexChanged += new System.EventHandler(this.ChannelMessagesList_SelectedIndexChanged);
             this.ChannelMessagesList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.ChannelMessagesList_MouseDoubleClick);
-            // 
-            // MemberRemoveButton
-            // 
-            this.MemberRemoveButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.MemberRemoveButton.Enabled = false;
-            this.MemberRemoveButton.Image = ((System.Drawing.Image)(resources.GetObject("MemberRemoveButton.Image")));
-            this.MemberRemoveButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.MemberRemoveButton.Name = "MemberRemoveButton";
-            this.MemberRemoveButton.Size = new System.Drawing.Size(102, 22);
-            this.MemberRemoveButton.Text = "Remove Member";
-            this.MemberRemoveButton.Click += new System.EventHandler(this.MemberRemoveButton_Click);
             // 
             // ServerForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(933, 543);
             this.Controls.Add(this.MainSplit);
             this.Controls.Add(this.TopToolStrip);
             this.Controls.Add(this.BottomStatusStrip);
@@ -577,5 +644,13 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
         private ToolStripMenuItem ChannelNameItem;
         private ToolStripMenuItem ChannelDescriptionItem;
         private ToolStripButton MemberRemoveButton;
+        private ToolStripDropDownButton ServerInfoDropdown;
+        private ToolStripMenuItem ServerNameItem;
+        private ToolStripMenuItem ServerDescItem;
+        private ToolStripMenuItem ServerIconItem;
+        private ToolStripSeparator toolStripSeparator1;
+        private ToolStripSeparator toolStripSeparator2;
+        private ToolStripSeparator toolStripSeparator3;
+        private ToolStripSeparator toolStripSeparator4;
     }
 }

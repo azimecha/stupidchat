@@ -23,11 +23,10 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             WindowsRandomNumberGenerator.Fill(arrPrivateKey);
             Properties.Settings.Default.PrivateKey = Convert.ToHexString(arrPrivateKey);
 
-            Core.Structures.ServerInfo infServer = new Core.Structures.ServerInfo() {
+            ServerInfo = new Core.Structures.ServerInfo() {
                 Name = "Test Server",
                 Description = "For testing purposes"
             };
-            Properties.Settings.Default.ServerInfo = Newtonsoft.Json.JsonConvert.SerializeObject(infServer);
 
             string strDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StupidchatServer");
             if (!Directory.Exists(strDataFolder))
@@ -39,15 +38,18 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             Properties.Settings.Default.Save();
         }
 
+        public Core.Structures.ServerInfo ServerInfo {
+            get => Newtonsoft.Json.JsonConvert.DeserializeObject<Core.Structures.ServerInfo>(Properties.Settings.Default.ServerInfo);
+            set => Properties.Settings.Default.ServerInfo = Newtonsoft.Json.JsonConvert.SerializeObject(value);
+        }
+
         private void StartStopButton_Click(object sender, EventArgs e) {
             if (_server is null) {
                 byte[] arrPrivateKey = Convert.FromHexString(Properties.Settings.Default.PrivateKey);
-                Core.Structures.ServerInfo infServer = Newtonsoft.Json.JsonConvert.DeserializeObject<Core.Structures.ServerInfo>
-                    (Properties.Settings.Default.ServerInfo);
                 System.Net.IPEndPoint endpoint = new System.Net.IPEndPoint(System.Net.IPAddress.Any, Properties.Settings.Default.Port);
 
                 try {
-                    _server = new Server.Server(arrPrivateKey, endpoint, infServer, Properties.Settings.Default.DatabasePath);
+                    _server = new Server.Server(arrPrivateKey, endpoint, ServerInfo, Properties.Settings.Default.DatabasePath);
                 } catch (Exception ex) {
                     MessageBox.Show(this, $"Error starting server:\n{ex}", "Server error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
@@ -93,6 +95,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
                 StartStopButton.Text = "Start Server";
             }
 
+            ServerInfoDropdown.Enabled = _server is null;
             ChannelCreateButton.Enabled = !(_server is null);
         }
 
@@ -267,8 +270,8 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             => SetCurrentMemberPower(Core.Structures.PowerLevel.Administrator);
 
         private void SetCurrentMemberPower(Core.Structures.PowerLevel power) {
-            Server.Records.MessageRecord member = MembersList.SelectedItem as Server.Records.MessageRecord;
-            if (!(member is null)) _server.SetMemberPower(member.UniqueID, power);
+            Server.Records.MemberRecord member = MembersList.SelectedItem as Server.Records.MemberRecord;
+            if (!(member is null)) _server.SetMemberPower(member.MemberID, power);
         }
 
         private void ChannelCreateButton_Click(object sender, EventArgs e) {
@@ -306,11 +309,8 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
         }
 
         private void ChannelMessagesList_MouseDoubleClick(object sender, MouseEventArgs e) {
-            Core.Structures.MessageData? infMessage = ChannelMessagesList.SelectedItem as Core.Structures.MessageData?;
-            if (infMessage.HasValue) {
-                MessageBox.Show(this, $"Poster: {infMessage.Value.SenderPublicSigningKey}\nPost date: {infMessage.Value.PostedTime}\n"
-                    + "Data: " + System.Text.Encoding.UTF8.GetString(infMessage.Value.SignedData));
-            }
+            if (ChannelMessagesList.SelectedItem is Server.Records.MessageRecord message)
+                MessageBox.Show(this, message.Flatten().ToDataString("\r\n"));
         }
 
         private void ChannelNameItem_Click(object sender, EventArgs e) {
@@ -364,6 +364,36 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
         private void MembersList_MouseDoubleClick(object sender, MouseEventArgs e) {
             if (MembersList.SelectedItem is Server.Records.MemberRecord memb)
                 MessageBox.Show(this, memb.Flatten().ToDataString("\n"), "Member Info");
+        }
+
+        private void ServerNameItem_Click(object sender, EventArgs e) {
+            Core.Structures.ServerInfo infServer = ServerInfo;
+            string strName = Microsoft.VisualBasic.Interaction.InputBox("Enter a short, human readable name for the server.",
+                "Set Server Name", infServer.Name);
+            if ((strName?.Length ?? 0) > 0) {
+                infServer.Name = strName;
+                ServerInfo = infServer;
+            }
+        }
+
+        private void ServerDescItem_Click(object sender, EventArgs e) {
+            Core.Structures.ServerInfo infServer = ServerInfo;
+            string strDesc = Microsoft.VisualBasic.Interaction.InputBox("Enter a the description of the server to be shown to users.",
+                "Set Server Description", infServer.Description);
+            if ((strDesc?.Length ?? 0) > 0) {
+                infServer.Description = strDesc;
+                ServerInfo = infServer;
+            }
+        }
+
+        private void ServerIconItem_Click(object sender, EventArgs e) {
+            Core.Structures.ServerInfo infServer = ServerInfo;
+            string strURL = Microsoft.VisualBasic.Interaction.InputBox("Enter the URL of the image to use as the server's icon.",
+                "Set Server Icon", infServer.ImageURL);
+            if ((strURL?.Length ?? 0) > 0) {
+                infServer.ImageURL = strURL;
+                ServerInfo = infServer;
+            }
         }
     }
 }

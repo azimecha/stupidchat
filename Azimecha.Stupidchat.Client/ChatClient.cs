@@ -140,6 +140,7 @@ namespace Azimecha.Stupidchat.Client {
             private ServerInfo _info;
             private object _objInfoMutex;
             private byte[] _arrServerPublicKey;
+            private Lazy<TemporaryFile> _tfIcon;
 
             internal Server(ChatClient cclient, string strAddress, int nPort, ReadOnlySpan<byte> spanPrivateKey) {
                 _cclient = cclient;
@@ -177,6 +178,8 @@ namespace Azimecha.Stupidchat.Client {
                 SignedStructSerializer.SignedData dataProfile = SignedStructSerializer.Serialize(_cclient._profileMe,
                     _cclient._arrPublicKey, _cclient._arrPrivateKey);
                 _conn.PerformRequest(new UpdateProfileRequest() { SignedData = dataProfile.Data, Signature = dataProfile.Signature });
+
+                _tfIcon = new Lazy<TemporaryFile>(DownloadIcon, LazyThreadSafetyMode.ExecutionAndPublication);
             }
 
             public string Address { get; private set; }
@@ -358,6 +361,12 @@ namespace Azimecha.Stupidchat.Client {
                 _cclient?.OnDisconnected(this);
                 Dispose();
             }
+
+            private TemporaryFile DownloadIcon()
+                => DownloadFile(Info.ImageURL);
+
+            public System.IO.Stream OpenIcon()
+                => (_tfIcon.Value is null) ? null : System.IO.File.Open(_tfIcon.Value.Path, System.IO.FileMode.Open, System.IO.FileAccess.Read);
         }
 
         private class Member : IMember {
@@ -540,10 +549,16 @@ namespace Azimecha.Stupidchat.Client {
                 Utils.InterlockedExchangeIfGreater(ref _nHighestMessageIndex, msg.IndexInChannel, msg.IndexInChannel);
             }
 
-            internal void RemoveMessage(long nIndex) {
+            internal void RemoveMessage(long nIndex, bool bPlaceTombstone = true) {
                 IMessage msg;
-                _dicMessages.TryRemove(nIndex, out msg);
+                if (_dicMessages.TryRemove(nIndex, out msg)) {
+                    if (bPlaceTombstone)
+                        _dicMessages.TryAdd(nIndex, new MissingMessage(this, nIndex));
+                }
             }
+
+            public IMessage GetMessage(long nIndex)
+                => TryGetMessage(nIndex, true);
         }
 
         private class User : IUser {
@@ -551,12 +566,14 @@ namespace Azimecha.Stupidchat.Client {
             private byte[] _arrPublicKey;
             private UserProfile _profile;
             private object _objProfileMutex;
+            private Lazy<TemporaryFile> _tfAvatar;
 
             internal User(ReadOnlySpan<byte> spanPublicKey, UserProfile profile) {
                 _lstMemberships = new List<Member>();
                 _arrPublicKey = spanPublicKey.ToArray();
                 _profile = profile;
                 _objProfileMutex = new object();
+                _tfAvatar = new Lazy<TemporaryFile>(DownloadAvatar, LazyThreadSafetyMode.ExecutionAndPublication);
             }
 
             internal void AddMembership(Member memb) {
@@ -590,6 +607,28 @@ namespace Azimecha.Stupidchat.Client {
                     lock (_objProfileMutex)
                         return _profile;
                 }
+            }
+
+            private TemporaryFile DownloadAvatar()
+                => DownloadFile(Profile.AvatarURL);
+
+            public System.IO.Stream OpenAvatar()
+                => (_tfAvatar.Value is null) ? null : System.IO.File.Open(_tfAvatar.Value.Path, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+        }
+
+        private static TemporaryFile DownloadFile(string strURL) {
+            strURL = strURL?.Trim();
+            if ((strURL?.Length ?? 0) <= 0)
+                return null;
+
+            TemporaryFile tf = new TemporaryFile();
+            try {
+                using (System.Net.WebClient wc = new System.Net.WebClient())
+                    wc.DownloadFile(strURL, tf.Path);
+                return tf;
+            } catch (Exception) {
+                tf.Dispose();
+                throw;
             }
         }
 

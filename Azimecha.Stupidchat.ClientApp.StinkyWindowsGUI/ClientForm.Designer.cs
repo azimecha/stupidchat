@@ -26,9 +26,11 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
         ///  the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ClientForm));
             this.MainSplitLayout = new System.Windows.Forms.SplitContainer();
             this.ServersTreeView = new System.Windows.Forms.TreeView();
+            this.ServerImageList = new System.Windows.Forms.ImageList(this.components);
             this.ServerSplitLayout = new System.Windows.Forms.SplitContainer();
             this.ChannelSplitLayout = new System.Windows.Forms.SplitContainer();
             this.MessagesLayout = new System.Windows.Forms.FlowLayoutPanel();
@@ -36,18 +38,19 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             this.MessageTextBox = new System.Windows.Forms.TextBox();
             this.SendMessageButton = new System.Windows.Forms.Button();
             this.MembersListView = new System.Windows.Forms.ListView();
+            this.UserImageList = new System.Windows.Forms.ImageList(this.components);
             this.MainStripContainer = new System.Windows.Forms.ToolStripContainer();
             this.MainStatusStrip = new System.Windows.Forms.StatusStrip();
             this.MainStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.ServersToolStrip = new System.Windows.Forms.ToolStrip();
+            this.ServerConnectButton = new System.Windows.Forms.ToolStripButton();
+            this.ServerDisconnectButton = new System.Windows.Forms.ToolStripButton();
+            this.ServerSetNickButton = new System.Windows.Forms.ToolStripButton();
             this.UserToolStrip = new System.Windows.Forms.ToolStrip();
             this.UserSetNameButton = new System.Windows.Forms.ToolStripButton();
             this.UserSetBioButton = new System.Windows.Forms.ToolStripButton();
             this.UserSetAvatarButton = new System.Windows.Forms.ToolStripButton();
             this.UserLogOutButton = new System.Windows.Forms.ToolStripButton();
-            this.ServersToolStrip = new System.Windows.Forms.ToolStrip();
-            this.ServerConnectButton = new System.Windows.Forms.ToolStripButton();
-            this.ServerDisconnectButton = new System.Windows.Forms.ToolStripButton();
-            this.ServerSetNickButton = new System.Windows.Forms.ToolStripButton();
             this.NewConnectionWorker = new System.ComponentModel.BackgroundWorker();
             this.SavedConnectionsWorker = new System.ComponentModel.BackgroundWorker();
             ((System.ComponentModel.ISupportInitialize)(this.MainSplitLayout)).BeginInit();
@@ -68,8 +71,8 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             this.MainStripContainer.TopToolStripPanel.SuspendLayout();
             this.MainStripContainer.SuspendLayout();
             this.MainStatusStrip.SuspendLayout();
-            this.UserToolStrip.SuspendLayout();
             this.ServersToolStrip.SuspendLayout();
+            this.UserToolStrip.SuspendLayout();
             this.SuspendLayout();
             // 
             // MainSplitLayout
@@ -100,12 +103,21 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             this.ServersTreeView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.ServersTreeView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.ServersTreeView.HotTracking = true;
+            this.ServersTreeView.ImageIndex = 0;
+            this.ServersTreeView.ImageList = this.ServerImageList;
             this.ServersTreeView.Location = new System.Drawing.Point(0, 0);
             this.ServersTreeView.Margin = new System.Windows.Forms.Padding(0);
             this.ServersTreeView.Name = "ServersTreeView";
+            this.ServersTreeView.SelectedImageIndex = 0;
             this.ServersTreeView.Size = new System.Drawing.Size(182, 433);
             this.ServersTreeView.TabIndex = 0;
             this.ServersTreeView.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.ServersTreeView_NodeMouseClick);
+            // 
+            // ServerImageList
+            // 
+            this.ServerImageList.ColorDepth = System.Windows.Forms.ColorDepth.Depth32Bit;
+            this.ServerImageList.ImageSize = new System.Drawing.Size(16, 16);
+            this.ServerImageList.TransparentColor = System.Drawing.Color.Transparent;
             // 
             // ServerSplitLayout
             // 
@@ -212,12 +224,19 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             // 
             this.MembersListView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.MembersListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.MembersListView.LargeImageList = this.UserImageList;
             this.MembersListView.Location = new System.Drawing.Point(0, 0);
             this.MembersListView.Name = "MembersListView";
             this.MembersListView.Size = new System.Drawing.Size(155, 433);
             this.MembersListView.TabIndex = 0;
             this.MembersListView.UseCompatibleStateImageBehavior = false;
             this.MembersListView.View = System.Windows.Forms.View.List;
+            // 
+            // UserImageList
+            // 
+            this.UserImageList.ColorDepth = System.Windows.Forms.ColorDepth.Depth32Bit;
+            this.UserImageList.ImageSize = new System.Drawing.Size(32, 32);
+            this.UserImageList.TransparentColor = System.Drawing.Color.Transparent;
             // 
             // MainStripContainer
             // 
@@ -240,8 +259,8 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             // 
             // MainStripContainer.TopToolStripPanel
             // 
-            this.MainStripContainer.TopToolStripPanel.Controls.Add(this.ServersToolStrip);
             this.MainStripContainer.TopToolStripPanel.Controls.Add(this.UserToolStrip);
+            this.MainStripContainer.TopToolStripPanel.Controls.Add(this.ServersToolStrip);
             // 
             // MainStatusStrip
             // 
@@ -259,6 +278,51 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             this.MainStatusLabel.Size = new System.Drawing.Size(42, 17);
             this.MainStatusLabel.Text = "Ready.";
             // 
+            // ServersToolStrip
+            // 
+            this.ServersToolStrip.Dock = System.Windows.Forms.DockStyle.None;
+            this.ServersToolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ServerConnectButton,
+            this.ServerDisconnectButton,
+            this.ServerSetNickButton});
+            this.ServersToolStrip.Location = new System.Drawing.Point(3, 0);
+            this.ServersToolStrip.Name = "ServersToolStrip";
+            this.ServersToolStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
+            this.ServersToolStrip.Size = new System.Drawing.Size(242, 25);
+            this.ServersToolStrip.TabIndex = 0;
+            // 
+            // ServerConnectButton
+            // 
+            this.ServerConnectButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.ServerConnectButton.Image = ((System.Drawing.Image)(resources.GetObject("ServerConnectButton.Image")));
+            this.ServerConnectButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.ServerConnectButton.Name = "ServerConnectButton";
+            this.ServerConnectButton.Size = new System.Drawing.Size(56, 22);
+            this.ServerConnectButton.Text = "Connect";
+            this.ServerConnectButton.Click += new System.EventHandler(this.ConnectButton_Click);
+            // 
+            // ServerDisconnectButton
+            // 
+            this.ServerDisconnectButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.ServerDisconnectButton.Enabled = false;
+            this.ServerDisconnectButton.Image = ((System.Drawing.Image)(resources.GetObject("ServerDisconnectButton.Image")));
+            this.ServerDisconnectButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.ServerDisconnectButton.Name = "ServerDisconnectButton";
+            this.ServerDisconnectButton.Size = new System.Drawing.Size(70, 22);
+            this.ServerDisconnectButton.Text = "Disconnect";
+            this.ServerDisconnectButton.Click += new System.EventHandler(this.ServerDisconnectButton_Click);
+            // 
+            // ServerSetNickButton
+            // 
+            this.ServerSetNickButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.ServerSetNickButton.Enabled = false;
+            this.ServerSetNickButton.Image = ((System.Drawing.Image)(resources.GetObject("ServerSetNickButton.Image")));
+            this.ServerSetNickButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.ServerSetNickButton.Name = "ServerSetNickButton";
+            this.ServerSetNickButton.Size = new System.Drawing.Size(104, 22);
+            this.ServerSetNickButton.Text = "Set My Nickname";
+            this.ServerSetNickButton.Click += new System.EventHandler(this.ServerSetNickButton_Click);
+            // 
             // UserToolStrip
             // 
             this.UserToolStrip.Dock = System.Windows.Forms.DockStyle.None;
@@ -267,10 +331,10 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             this.UserSetBioButton,
             this.UserSetAvatarButton,
             this.UserLogOutButton});
-            this.UserToolStrip.Location = new System.Drawing.Point(254, 0);
+            this.UserToolStrip.Location = new System.Drawing.Point(253, 0);
             this.UserToolStrip.Name = "UserToolStrip";
             this.UserToolStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.UserToolStrip.Size = new System.Drawing.Size(311, 25);
+            this.UserToolStrip.Size = new System.Drawing.Size(280, 25);
             this.UserToolStrip.TabIndex = 1;
             // 
             // UserSetNameButton
@@ -313,51 +377,6 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             this.UserLogOutButton.Text = "Log Out";
             this.UserLogOutButton.Click += new System.EventHandler(this.UserLogOutButton_Click);
             // 
-            // ServersToolStrip
-            // 
-            this.ServersToolStrip.Dock = System.Windows.Forms.DockStyle.None;
-            this.ServersToolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.ServerConnectButton,
-            this.ServerDisconnectButton,
-            this.ServerSetNickButton});
-            this.ServersToolStrip.Location = new System.Drawing.Point(10, 0);
-            this.ServersToolStrip.Name = "ServersToolStrip";
-            this.ServersToolStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.ServersToolStrip.Size = new System.Drawing.Size(242, 25);
-            this.ServersToolStrip.TabIndex = 0;
-            // 
-            // ServerConnectButton
-            // 
-            this.ServerConnectButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.ServerConnectButton.Image = ((System.Drawing.Image)(resources.GetObject("ServerConnectButton.Image")));
-            this.ServerConnectButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.ServerConnectButton.Name = "ServerConnectButton";
-            this.ServerConnectButton.Size = new System.Drawing.Size(56, 22);
-            this.ServerConnectButton.Text = "Connect";
-            this.ServerConnectButton.Click += new System.EventHandler(this.ConnectButton_Click);
-            // 
-            // ServerDisconnectButton
-            // 
-            this.ServerDisconnectButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.ServerDisconnectButton.Enabled = false;
-            this.ServerDisconnectButton.Image = ((System.Drawing.Image)(resources.GetObject("ServerDisconnectButton.Image")));
-            this.ServerDisconnectButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.ServerDisconnectButton.Name = "ServerDisconnectButton";
-            this.ServerDisconnectButton.Size = new System.Drawing.Size(70, 22);
-            this.ServerDisconnectButton.Text = "Disconnect";
-            this.ServerDisconnectButton.Click += new System.EventHandler(this.ServerDisconnectButton_Click);
-            // 
-            // ServerSetNickButton
-            // 
-            this.ServerSetNickButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.ServerSetNickButton.Enabled = false;
-            this.ServerSetNickButton.Image = ((System.Drawing.Image)(resources.GetObject("ServerSetNickButton.Image")));
-            this.ServerSetNickButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.ServerSetNickButton.Name = "ServerSetNickButton";
-            this.ServerSetNickButton.Size = new System.Drawing.Size(104, 22);
-            this.ServerSetNickButton.Text = "Set My Nickname";
-            this.ServerSetNickButton.Click += new System.EventHandler(this.ServerSetNickButton_Click);
-            // 
             // NewConnectionWorker
             // 
             this.NewConnectionWorker.DoWork += new System.ComponentModel.DoWorkEventHandler(this.NewConnectionWorker_DoWork);
@@ -377,6 +396,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             this.Controls.Add(this.MainStripContainer);
             this.Name = "ClientForm";
             this.Text = "Chat Client";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.ClientForm_FormClosed);
             this.MainSplitLayout.Panel1.ResumeLayout(false);
             this.MainSplitLayout.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.MainSplitLayout)).EndInit();
@@ -400,10 +420,10 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
             this.MainStripContainer.PerformLayout();
             this.MainStatusStrip.ResumeLayout(false);
             this.MainStatusStrip.PerformLayout();
-            this.UserToolStrip.ResumeLayout(false);
-            this.UserToolStrip.PerformLayout();
             this.ServersToolStrip.ResumeLayout(false);
             this.ServersToolStrip.PerformLayout();
+            this.UserToolStrip.ResumeLayout(false);
+            this.UserToolStrip.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -433,5 +453,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
         private ToolStripButton ServerDisconnectButton;
         private ToolStripButton ServerSetNickButton;
         private ToolStripButton UserLogOutButton;
+        private ImageList UserImageList;
+        private ImageList ServerImageList;
     }
 }

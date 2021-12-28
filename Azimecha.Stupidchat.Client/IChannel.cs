@@ -9,6 +9,7 @@ namespace Azimecha.Stupidchat.Client {
         ChannelInfo Info { get; }
 
         IEnumerable<IMessage> Messages { get; }
+        IMessage GetMessage(long nIndex);
 
         void PostMessage(MessageSignedData msg);
     }

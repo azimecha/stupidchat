@@ -21,5 +21,7 @@ namespace Azimecha.Stupidchat.Client {
 
         void Disconnect();
         void SetNickname(string strNickname);
+
+        System.IO.Stream OpenIcon();
     }
 }
