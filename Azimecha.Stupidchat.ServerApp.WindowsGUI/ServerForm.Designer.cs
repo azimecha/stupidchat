@@ -151,21 +151,21 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             // ServerNameItem
             // 
             this.ServerNameItem.Name = "ServerNameItem";
-            this.ServerNameItem.Size = new System.Drawing.Size(180, 22);
+            this.ServerNameItem.Size = new System.Drawing.Size(134, 22);
             this.ServerNameItem.Text = "Name";
             this.ServerNameItem.Click += new System.EventHandler(this.ServerNameItem_Click);
             // 
             // ServerDescItem
             // 
             this.ServerDescItem.Name = "ServerDescItem";
-            this.ServerDescItem.Size = new System.Drawing.Size(180, 22);
+            this.ServerDescItem.Size = new System.Drawing.Size(134, 22);
             this.ServerDescItem.Text = "Description";
             this.ServerDescItem.Click += new System.EventHandler(this.ServerDescItem_Click);
             // 
             // ServerIconItem
             // 
             this.ServerIconItem.Name = "ServerIconItem";
-            this.ServerIconItem.Size = new System.Drawing.Size(180, 22);
+            this.ServerIconItem.Size = new System.Drawing.Size(134, 22);
             this.ServerIconItem.Text = "Icon URL";
             this.ServerIconItem.Click += new System.EventHandler(this.ServerIconItem_Click);
             // 

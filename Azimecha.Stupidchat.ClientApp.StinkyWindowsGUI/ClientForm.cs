@@ -284,15 +284,13 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
         private void AddServer(Client.IServer server, IEnumerable<Client.IChannel> enuChannels) {
             TreeNode nodeServer = new TreeNode() {
                 Text = server.Info.Name,
-                Tag = server,
-                ImageKey = DEFAULT_IMAGE
+                Tag = server
             };
 
             /*System.IO.Stream stmIcon = server.OpenIcon();
             if (!(stmIcon is null)) {
                 string strIconKey = server.ID.ToHexString();
-                ServerImageList.Images.Add(strIconKey, new System.Drawing.Bitmap(stmIcon));
-                nodeServer.ImageKey = strIconKey;
+                ServerImageList.Images.Add(strIconKey, new System.Drawing.Bitmap(16, 16));
             }*/
 
             foreach (Client.IChannel chan in enuChannels) {
