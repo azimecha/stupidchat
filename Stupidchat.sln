@@ -17,9 +17,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azimecha.Stupidchat.ServerA
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI", "Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI\Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI.csproj", "{83BDB27D-7D11-4792-81AE-60C52705D456}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azimecha.AudioIO", "Azimecha.AudioIO\Azimecha.AudioIO.csproj", "{2C8D2BFD-3919-44C9-A964-25426B82387E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azimecha.AudioIO", "Azimecha.AudioIO\Azimecha.AudioIO.csproj", "{2C8D2BFD-3919-44C9-A964-25426B82387E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azimecha.AudioIO.PlaybackTest", "Azimecha.AudioIO.PlaybackTest\Azimecha.AudioIO.PlaybackTest.csproj", "{9A6706B0-797A-4A2E-95E2-37F1ED526263}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azimecha.AudioIO.PlaybackTest", "Azimecha.AudioIO.PlaybackTest\Azimecha.AudioIO.PlaybackTest.csproj", "{9A6706B0-797A-4A2E-95E2-37F1ED526263}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azimecha.Stupidchat.ClientApp.DesktopGUI", "Azimecha.Stupidchat.ClientApp.DesktopGUI\Azimecha.Stupidchat.ClientApp.DesktopGUI.csproj", "{4DB7FB44-D906-470A-95E2-CC4F43680BF6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{9A6706B0-797A-4A2E-95E2-37F1ED526263}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A6706B0-797A-4A2E-95E2-37F1ED526263}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9A6706B0-797A-4A2E-95E2-37F1ED526263}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DB7FB44-D906-470A-95E2-CC4F43680BF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DB7FB44-D906-470A-95E2-CC4F43680BF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DB7FB44-D906-470A-95E2-CC4F43680BF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DB7FB44-D906-470A-95E2-CC4F43680BF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
