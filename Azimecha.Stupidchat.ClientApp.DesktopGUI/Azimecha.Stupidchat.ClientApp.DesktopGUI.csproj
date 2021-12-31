@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <None Remove=".gitignore" />
@@ -12,5 +11,15 @@
     <PackageReference Include="Avalonia.Desktop" Version="0.10.10" />
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="0.10.10" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="6.0.0" />
    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Azimecha.AudioIO\Azimecha.AudioIO.csproj" />
+    <ProjectReference Include="..\Azimecha.Stupidchat.Client\Azimecha.Stupidchat.Client.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="TextEntryDialog.axaml.cs">
+      <DependentUpon>TextEntryDialog.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>

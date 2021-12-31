@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="360" d:DesignHeight="200"
+        x:Class="Azimecha.Stupidchat.ClientApp.DesktopGUI.MessageDialog"
+		Title="Message" Background="#222222" Foreground="#EEEEEE"
+		MinWidth="360" MinHeight="200" MaxWidth="720" MaxHeight="400"
+		Width="360" Height="200" WindowStartupLocation="CenterOwner">
+	
+	<DockPanel Margin="16">
+		<StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
+					HorizontalAlignment="Right" Spacing="8">
+			<Button Content="OK" Width="80" Click="OKButton_Click"
+					HorizontalContentAlignment="Center"/>
+		</StackPanel>
+		<TextBlock TextWrapping="Wrap"
+				   Text="{Binding MessageText, RelativeSource = 
+						{RelativeSource FindAncestor, AncestorType=Window}}"/>
+	</DockPanel>
+	
+</Window>

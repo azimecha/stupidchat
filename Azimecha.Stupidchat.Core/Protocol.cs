@@ -44,4 +44,9 @@ namespace Azimecha.Stupidchat.Core.Protocol {
         [DataMember] public string MessageType;
         [DataMember] public IMessage Message;
     }
+
+    public static class ProtocolConstants {
+
+        public const int DEFAULT_PORT = 22001;
+    }
 }

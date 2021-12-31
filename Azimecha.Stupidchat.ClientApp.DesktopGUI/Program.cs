@@ -17,5 +17,17 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             => AppBuilder.Configure<App>()
                 .UsePlatformDetect()
                 .LogToTrace();
+
+        public static string DataFolder => _strDataFolder.Value;
+
+        private static Lazy<string> _strDataFolder = new Lazy<string>(GetDataFolderPath, 
+            System.Threading.LazyThreadSafetyMode.PublicationOnly);
+
+        private static string GetDataFolderPath() {
+            string strPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                typeof(Program).Namespace);
+            System.IO.Directory.CreateDirectory(strPath);
+            return strPath;
+        }
     }
 }
