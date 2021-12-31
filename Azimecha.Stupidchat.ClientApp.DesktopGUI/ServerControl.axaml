@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="440"
              x:Class="Azimecha.Stupidchat.ClientApp.DesktopGUI.ServerControl">
+	
 	<Grid>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="40"/>
@@ -17,26 +18,19 @@
 		</Grid.ColumnDefinitions>
 
 		<Border Grid.Row="0" Grid.Column="0" Background="#1A1A1A">
-			<TextBlock Text="{Binding Server, RelativeSource = 
-						{RelativeSource FindAncestor, AncestorType = UserControl},
-						Path = Server.Info.Name, Mode = OneWay}" Margin="16,0,16,0"
+			<TextBlock x:Name="ServerNameText" Text="Server Name" Margin="16,0,16,0"
 					   VerticalAlignment="Center" FontWeight="Bold"/>
 		</Border>
 
 		<Border Grid.Row="0" Grid.Column="1" Background="#1A1A1A">
-			<TextBlock Text="{Binding Channel, RelativeSource = 
-						{RelativeSource FindAncestor, AncestorType = UserControl},
-						Path = Channel.Info.Name, Mode = OneWay}" Margin="16,0,16,0"
+			<TextBlock x:Name="ChannelNameText" Text="Channel Name" Margin="16,0,16,0"
 					   VerticalAlignment="Center" FontStyle="Italic"/>
 		</Border>
 
 		<Border Grid.Row="0" Grid.Column="2" Background="#1A1A1A"/>
 
 		<Border Grid.Row="1" Grid.Column="0" Background="#1A1A1A">
-			<ItemsControl x:Name="ChannelItems" 
-						  Items="{Binding Server, RelativeSource = 
-						 {RelativeSource FindAncestor, AncestorType = UserControl},
-						  Path = Server.Channels, Mode = OneWay}">
+			<ItemsControl x:Name="ChannelItems">
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
 						<Button Content="{Binding Info.Name}" 
@@ -50,10 +44,7 @@
 		<Border x:Name="ChannelBorder" Grid.Row="1" Grid.Column="1" />
 
 		<Border Grid.Row="1" Grid.Column="2" Background="#2A2A2A">
-			<ItemsControl x:Name="MemberItems"
-						  Items="{Binding Server, RelativeSource = 
-						 {RelativeSource FindAncestor, AncestorType = UserControl},
-						  Path = Server.Members, Mode = OneWay}">
+			<ItemsControl x:Name="MemberItems">
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
 						<Button Content="{Binding DisplayName}"
