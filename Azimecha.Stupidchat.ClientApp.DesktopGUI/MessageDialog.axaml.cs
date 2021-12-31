@@ -4,8 +4,8 @@ using Avalonia.Markup.Xaml;
 
 namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
     public partial class MessageDialog : Window {
-        public static readonly DirectProperty<TextEntryDialog, string> MessageTextProperty =
-            AvaloniaProperty.RegisterDirect<TextEntryDialog, string>(nameof(MessageText), w => w.PromptText, (w, v) => w.PromptText = v);
+        public static readonly DirectProperty<MessageDialog, string> MessageTextProperty =
+            AvaloniaProperty.RegisterDirect<MessageDialog, string>(nameof(MessageText), w => w.MessageText, (w, v) => w.MessageText = v);
 
         public MessageDialog() {
             InitializeComponent();

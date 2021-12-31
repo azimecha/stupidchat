@@ -13,7 +13,7 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<Border Grid.Row="0" Background="#1A1A1A">
+		<Border Grid.Row="0" Background="#111111">
 			<DockPanel Margin="6,0,6,0">
 				<Button x:Name="AddServerButton" DockPanel.Dock="Right"
 						Content="Add Server" Click="AddServer_Click"/>

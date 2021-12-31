@@ -8,5 +8,6 @@ namespace Azimecha.Stupidchat.Client {
         IServer Server { get; }
         MemberInfo Info { get; }
         IUser User { get; }
+        string DisplayName { get; }
     }
 }

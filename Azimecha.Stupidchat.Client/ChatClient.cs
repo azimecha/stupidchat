@@ -401,6 +401,13 @@ namespace Azimecha.Stupidchat.Client {
             }
 
             public IUser User => _user;
+
+            public string DisplayName {
+                get {
+                    MemberInfo info = Info;
+                    return (info.Nickname?.Length ?? 0) > 0 ? info.Nickname : User.DisplayName;
+                }
+            }
         }
 
         private class Channel : IChannel {
@@ -614,6 +621,14 @@ namespace Azimecha.Stupidchat.Client {
 
             public System.IO.Stream OpenAvatar()
                 => (_tfAvatar.Value is null) ? null : System.IO.File.Open(_tfAvatar.Value.Path, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+
+            public string DisplayName {
+                get {
+                    UserProfile profile = Profile;
+                    return (profile.DisplayName?.Length ?? 0) > 0 ? profile.DisplayName
+                        : ((profile.Username?.Length ?? 0) > 0 ? profile.Username : _arrPublicKey.ToHexString());
+                }
+            }
         }
 
         private static TemporaryFile DownloadFile(string strURL) {

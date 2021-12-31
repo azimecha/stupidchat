@@ -8,6 +8,7 @@ namespace Azimecha.Stupidchat.Client {
         UserProfile Profile { get; }
         ReadOnlySpan<byte> PublicKey { get; }
         IEnumerable<IMember> Memberships { get; }
+        string DisplayName { get; }
 
         System.IO.Stream OpenAvatar();
     }

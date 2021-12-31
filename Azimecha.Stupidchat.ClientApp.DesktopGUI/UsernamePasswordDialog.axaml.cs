@@ -4,14 +4,14 @@ using Avalonia.Markup.Xaml;
 
 namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
     public partial class UsernamePasswordDialog : Window {
-        public static readonly DirectProperty<TextEntryDialog, string> PromptTextProperty =
-            AvaloniaProperty.RegisterDirect<TextEntryDialog, string>(nameof(PromptText), w => w.EnteredText, (w, v) => w.EnteredText = v);
+        public static readonly DirectProperty<UsernamePasswordDialog, string> PromptTextProperty =
+            AvaloniaProperty.RegisterDirect<UsernamePasswordDialog, string>(nameof(PromptText), w => w.PromptText, (w, v) => w.PromptText = v);
 
-        public static readonly DirectProperty<TextEntryDialog, string> UsernameProperty =
-            AvaloniaProperty.RegisterDirect<TextEntryDialog, string>(nameof(Username), w => w.EnteredText, (w, v) => w.EnteredText = v);
+        public static readonly DirectProperty<UsernamePasswordDialog, string> UsernameProperty =
+            AvaloniaProperty.RegisterDirect<UsernamePasswordDialog, string>(nameof(Username), w => w.Username, (w, v) => w.Username = v);
 
-        public static readonly DirectProperty<TextEntryDialog, string> PasswordProperty =
-            AvaloniaProperty.RegisterDirect<TextEntryDialog, string>(nameof(Password), w => w.EnteredText, (w, v) => w.EnteredText = v);
+        public static readonly DirectProperty<UsernamePasswordDialog, string> PasswordProperty =
+            AvaloniaProperty.RegisterDirect<UsernamePasswordDialog, string>(nameof(Password), w => w.Password, (w, v) => w.Password = v);
 
         public UsernamePasswordDialog() {
             InitializeComponent();

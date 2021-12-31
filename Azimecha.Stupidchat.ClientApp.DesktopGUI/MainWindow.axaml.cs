@@ -12,6 +12,8 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private BackgroundWorker _wkrNewConnection, _wkrRestoreConnections;
         private StackPanel _ctlServersStack;
         private string _strNewConnectionURL;
+        private ServerControl _ctlServer;
+        private Border _ctlServerBorder;
 
         // init phase 0
         public MainWindow() {
@@ -30,6 +32,8 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             _wkrRestoreConnections.ProgressChanged += RestoreConnectionsWorker_ProgressChanged;
 
             _ctlServersStack = this.FindControl<StackPanel>("ServersStack");
+            _ctlServerBorder = this.FindControl<Border>("ServerBorder");
+            _ctlServer = new ServerControl();
         }
 
         private void InitializeComponent() {
@@ -191,6 +195,8 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
         private void FinishAddingServer(IServer server) {
             _ctlServersStack.Children.Add(new Button() { Content = server.Info.Name, Tag = server });
+            _ctlServer.Server = server;
+            _ctlServerBorder.Child = _ctlServer;
         }
     }
 }
