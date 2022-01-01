@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Azimecha.Stupidchat.Client;
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
 
@@ -53,7 +54,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
         protected override void OnPropertyChanged<T>(AvaloniaPropertyChangedEventArgs<T> change) {
             if ((change.Property == MessageProperty) && change.IsEffectiveValueChange)
-                OnMessageChanged();
+                OnMessageChanged(change.OldValue.HasValue ? (IMessage)change.OldValue.Value : null);
 
             base.OnPropertyChanged(change);
         }
@@ -62,7 +63,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private static readonly IImage DEFAULT_AVATAR_IMAGE = new Avalonia.Media.Imaging.Bitmap(
             AvaloniaLocator.Current.GetService<Avalonia.Platform.IAssetLoader>().Open(new System.Uri(DEFAULT_AVATAR_URL)));
 
-        private void OnMessageChanged() {
+        private void OnMessageChanged(IMessage msgOld) {
             SenderAvatar = DEFAULT_AVATAR_IMAGE;
             MessageText = (_message is null) ? "" : _message.SignedData.Text;
 

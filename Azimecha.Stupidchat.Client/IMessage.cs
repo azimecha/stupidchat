@@ -7,10 +7,12 @@ namespace Azimecha.Stupidchat.Client {
     public interface IMessage {
         IChannel Channel { get; }
         IMember Sender { get; }
-        bool Deleted { get; }
+        bool IsDeletedMessageTombstone { get; }
         MessageData Data { get; }
         MessageSignedData SignedData { get; }
         DateTime SentAt { get; }
         long IndexInChannel { get; }
+
+        event Action<IMessage> Deleted;
     }
 }

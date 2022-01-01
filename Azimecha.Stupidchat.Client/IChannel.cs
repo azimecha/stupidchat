@@ -12,5 +12,9 @@ namespace Azimecha.Stupidchat.Client {
         IMessage GetMessage(long nIndex);
 
         void PostMessage(MessageSignedData msg);
+
+        event Action<IMessage> MessagePosted;
+        event Action<IMessage, IMessage> MessageDeleted; // first is old message object, second is new tombstone
+        event Action<IChannel> InfoChanged;
     }
 }

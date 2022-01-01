@@ -23,5 +23,11 @@ namespace Azimecha.Stupidchat.Client {
         void SetNickname(string strNickname);
 
         System.IO.Stream OpenIcon();
+
+        event Action<IMember> MemberJoined;
+        event Action<IMember> MemberLeft;
+
+        event Action<IChannel> ChannelAdded;
+        event Action<IChannel> ChannelRemoved;
     }
 }

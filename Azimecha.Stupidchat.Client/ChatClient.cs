@@ -214,6 +214,12 @@ namespace Azimecha.Stupidchat.Client {
                 Interlocked.Exchange(ref _conn, null)?.Dispose();
                 _dicMembers = null;
                 _dicChannels = null;
+
+                MemberJoined = null;
+                MemberLeft = null;
+
+                ChannelAdded = null;
+                ChannelRemoved = null;
             }
 
             void ProtocolConnection.IErrorProcessor.ProcessError(Exception ex) {
@@ -239,6 +245,7 @@ namespace Azimecha.Stupidchat.Client {
                     _dicMembers.Add(IDToString(notif.Member.PublicKey), membNew);
 
                 _cclient.MemberJoined?.Invoke(membNew);
+                MemberJoined?.Invoke(membNew);
             }
 
             [Processor(typeof(Core.Notifications.MemberInfoChangedNotification))]
@@ -264,8 +271,10 @@ namespace Azimecha.Stupidchat.Client {
                         _dicMembers.Remove(strID);
                 }
 
-                if (!(membThatLeft is null))
+                if (!(membThatLeft is null)) {
                     _cclient.MemberLeft?.Invoke(membThatLeft);
+                    MemberLeft?.Invoke(membThatLeft);
+                }
             }
 
             [Processor(typeof(Core.Notifications.ChannelAddedNotification))]
@@ -276,6 +285,7 @@ namespace Azimecha.Stupidchat.Client {
                     _dicChannels.Add(notif.Channel.ID, chanNew);
 
                 _cclient.ChannelAdded?.Invoke(chanNew);
+                ChannelAdded?.Invoke(chanNew);
             }
 
             [Processor(typeof(Core.Notifications.ChannelInfoChangedNotification))]
@@ -300,23 +310,30 @@ namespace Azimecha.Stupidchat.Client {
                         _dicChannels.Remove(notif.ChannelID);
                 }
 
-                if (!(chanDeleted is null))
+                if (!(chanDeleted is null)) {
                     _cclient.ChannelRemoved?.Invoke(chanDeleted);
+                    ChannelRemoved?.Invoke(chanDeleted);
+                }
             }
 
             [Processor(typeof(Core.Notifications.MessagePostedNotification))]
             private void OnMessagePosted(Core.Notifications.MessagePostedNotification notif) {
                 Channel chan = (Channel)FindChannel(notif.ChannelID);
                 IMessage msg = CreateMessageObject(chan, notif.MessageIndex, notif.Message);
-                chan.AddMessage(msg);
+                chan.AcceptNewMessage(msg);
                 _cclient.MessagePosted?.Invoke(msg);
             }
 
             [Processor(typeof(Core.Notifications.MessageDeletedNotification))]
             private void OnMessageDeleted(Core.Notifications.MessageDeletedNotification notif) {
                 Channel chan = (Channel)FindChannel(notif.ChannelID);
+
                 IMessage msg = chan.TryGetMessage(notif.MessageIndex, false);
                 chan.RemoveMessage(notif.MessageIndex);
+
+                if (msg is Message msgNonDeleted)
+                    msgNonDeleted.OnDeleted();
+
                 _cclient.MessageDeleted?.Invoke(msg);
             }
 
@@ -367,6 +384,12 @@ namespace Azimecha.Stupidchat.Client {
 
             public System.IO.Stream OpenIcon()
                 => (_tfIcon.Value is null) ? null : System.IO.File.Open(_tfIcon.Value.Path, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+
+            public event Action<IMember> MemberJoined;
+            public event Action<IMember> MemberLeft;
+
+            public event Action<IChannel> ChannelAdded;
+            public event Action<IChannel> ChannelRemoved;
         }
 
         private class Member : IMember {
@@ -389,6 +412,8 @@ namespace Azimecha.Stupidchat.Client {
                     _user.UpdateProfile(profile);
                     _info = info;
                 }
+
+                Changed?.Invoke(this);
             }
 
             public IServer Server => _server;
@@ -408,6 +433,8 @@ namespace Azimecha.Stupidchat.Client {
                     return (info.Nickname?.Length ?? 0) > 0 ? info.Nickname : User.DisplayName;
                 }
             }
+
+            public event Action<IMember> Changed;
         }
 
         private class Channel : IChannel {
@@ -442,6 +469,8 @@ namespace Azimecha.Stupidchat.Client {
             internal void UpdateInfo(ChannelInfo info) {
                 lock (_objChannelMutex)
                     _info = info;
+
+                InfoChanged?.Invoke(this);
             }
 
             public IServer Server => _server;
@@ -551,21 +580,39 @@ namespace Azimecha.Stupidchat.Client {
                 });
             }
 
-            internal void AddMessage(IMessage msg) {
+            internal void AcceptNewMessage(IMessage msg) {
+                AddMessage(msg);
+                MessagePosted?.Invoke(msg);
+            }
+
+            private void AddMessage(IMessage msg) {
                 _dicMessages.TryAdd(msg.IndexInChannel, msg);
                 Utils.InterlockedExchangeIfGreater(ref _nHighestMessageIndex, msg.IndexInChannel, msg.IndexInChannel);
             }
 
             internal void RemoveMessage(long nIndex, bool bPlaceTombstone = true) {
-                IMessage msg;
+                IMessage msg, msgTombstone;
+
                 if (_dicMessages.TryRemove(nIndex, out msg)) {
-                    if (bPlaceTombstone)
-                        _dicMessages.TryAdd(nIndex, new MissingMessage(this, nIndex));
+                    if (bPlaceTombstone) {
+                        msgTombstone = new MissingMessage(this, nIndex);
+                        _dicMessages.TryAdd(nIndex, msgTombstone);
+                    }
+
+                    if (_dicMessages.TryGetValue(nIndex, out msgTombstone))
+                        MessageDeleted?.Invoke(msg, msgTombstone);
+                    else
+                        MessageDeleted?.Invoke(msg, null); // shouldn't happen
                 }
             }
 
             public IMessage GetMessage(long nIndex)
                 => TryGetMessage(nIndex, true);
+
+
+            public event Action<IMessage> MessagePosted;
+            public event Action<IMessage, IMessage> MessageDeleted;
+            public event Action<IChannel> InfoChanged;
         }
 
         private class User : IUser {
@@ -677,11 +724,17 @@ namespace Azimecha.Stupidchat.Client {
 
             public IChannel Channel => _chan;
             public IMember Sender => _membSender;
-            public bool Deleted => false;
+            public bool IsDeletedMessageTombstone => false;
             public MessageData Data => _dataUnsigned;
             public MessageSignedData SignedData => _dataSigned;
             public DateTime SentAt => _dateSent;
             public long IndexInChannel => _nIndex;
+
+            internal void OnDeleted() {
+                Deleted?.Invoke(this);
+            }
+
+            public event Action<IMessage> Deleted;
         }
 
         private class MissingMessage : IMessage {
@@ -695,11 +748,13 @@ namespace Azimecha.Stupidchat.Client {
 
             public IChannel Channel => _chan;
             public IMember Sender => null;
-            public bool Deleted => true;
+            public bool IsDeletedMessageTombstone => true;
             public MessageData Data => new MessageData();
             public MessageSignedData SignedData => new MessageSignedData();
             public DateTime SentAt => DateTime.MinValue;
             public long IndexInChannel => _nIndex;
+
+            public event Action<IMessage> Deleted;
         }
     }
 }

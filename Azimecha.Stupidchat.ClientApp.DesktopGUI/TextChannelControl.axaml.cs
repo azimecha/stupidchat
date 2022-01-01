@@ -21,6 +21,9 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private StackPanel _ctlMessagesStack;
         private BackgroundWorker _wkrDownloadMessages;
 
+        private Action<IMessage> _procOnMessagePosted;
+        private Action<IMessage, IMessage> _procOnMessageDeleted;
+
         public TextChannelControl() {
             InitializeComponent();
 
@@ -34,6 +37,9 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             _wkrDownloadMessages.DoWork += DownloadMessagesWorker_DoWork;
             _wkrDownloadMessages.RunWorkerCompleted += DownloadMessagesWorker_RunWorkerCompleted;
             _wkrDownloadMessages.ProgressChanged += DownloadMessagesWorker_ProgressChanged;
+
+            _procOnMessagePosted = new Action<IMessage>(OnMessagePosted);
+            _procOnMessageDeleted = new Action<IMessage, IMessage>(OnMessageDeleted);
         }
 
         private void InitializeComponent() {
@@ -61,7 +67,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         protected override void OnPropertyChanged<T>(AvaloniaPropertyChangedEventArgs<T> change) {
             if (change.IsEffectiveValueChange) {
                 if (change.Property == ChannelProperty)
-                    OnChannelChanged();
+                    OnChannelChanged(change.OldValue.HasValue ? (IChannel)change.OldValue.Value : null);
                 if (change.Property == SendBoxTextProperty)
                     UpdateSendAvailable();
             }
@@ -69,11 +75,19 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             base.OnPropertyChanged(change);
         }
 
-        private void OnChannelChanged() {
+        private void OnChannelChanged(IChannel chanOld) {
             _ctlMessagesStack.Children.Clear();
 
-            if (!(_channel is null))
+            if (!(chanOld is null)) {
+                chanOld.MessagePosted -= _procOnMessagePosted;
+                chanOld.MessageDeleted -= _procOnMessageDeleted;
+            }
+
+            if (!(_channel is null)) {
+                _channel.MessagePosted += _procOnMessagePosted;
+                _channel.MessageDeleted += _procOnMessageDeleted;
                 _wkrDownloadMessages.RunWorkerAsync(new MessagesDownloadParams() { Count = 10, StartingOffset = 0 });
+            }
 
             UpdateSendAvailable();
         }
@@ -100,10 +114,36 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
         private void DownloadMessagesWorker_ProgressChanged(object sender, ProgressChangedEventArgs e) {
             if (e.UserState is IMessage msg)
-                _ctlMessagesStack.Children.Insert(0, msg.Deleted 
-                    ? new TextBlock() { Text = "(deleted message)", Opacity = 0.5 } 
-                    : new MessageControl() { Message = msg });
+                AddControlForMessage(msg);
         }
+
+        private void AddControlForMessage(IMessage msg) {
+            int nIndex = 0;
+
+            foreach (IControl ctl in _ctlMessagesStack.Children) {
+                long nMessageIndex;
+
+                if ((ctl is MessageControl ctlMessage) && (ctlMessage.Message is IMessage msgCur))
+                    nMessageIndex = msgCur.IndexInChannel;
+                else if ((ctl is TextBlock ctlTombstone) && (ctlTombstone.Tag is long nTombstoneMessageIndex))
+                    nMessageIndex = nTombstoneMessageIndex;
+                else
+                    nMessageIndex = -1;
+
+                if (nMessageIndex > msg.IndexInChannel)
+                    break;
+
+                nIndex++;
+            }
+
+            _ctlMessagesStack.Children.Insert(nIndex, msg.IsDeletedMessageTombstone
+                ? new TextBlock() { Text = "(deleted message)", Opacity = 0.5, Tag = msg.IndexInChannel }
+                : new MessageControl() { Message = msg });
+        }
+
+        private void RemoveControlForMessage(IMessage msg)
+            => _ctlMessagesStack.Children.RemoveAll(_ctlMessagesStack.Children.OfType<MessageControl>()
+                .Where(ctl => ctl.Message?.IndexInChannel == msg.IndexInChannel).ToArray());
 
         private void SendButton_Click(object objSender, Avalonia.Interactivity.RoutedEventArgs e)
             => SendMessage();
@@ -128,5 +168,14 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
                 new MessageDialog() { Title = "Error Sending", MessageText = $"Error sending message:\n{ex.Message} ({ex.GetType().FullName})" }.Show();
             }
         }
+
+        private void OnMessagePosted(IMessage msg) => Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
+            AddControlForMessage(msg);
+        });
+
+        private void OnMessageDeleted(IMessage msgRemoved, IMessage msgTombstone) => Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
+            RemoveControlForMessage(msgRemoved);
+            AddControlForMessage(msgTombstone);
+        });
     }
 }
