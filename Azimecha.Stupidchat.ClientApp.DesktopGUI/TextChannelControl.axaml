@@ -10,13 +10,19 @@
 			<RowDefinition Height="40"/>
 		</Grid.RowDefinitions>
 		
-		<StackPanel x:Name="MessagesStack" Grid.Row="0"/>
+		<StackPanel x:Name="MessagesStack" Grid.Row="0"
+					Margin="16" Spacing="16"/>
 
 		<DockPanel Grid.Row="1" Margin="8">
 			<Button Grid.Column="1" Content="Send" Margin="0,-16,0,-16"
-					DockPanel.Dock="Right" HorizontalAlignment="Right"/>
+					DockPanel.Dock="Right" HorizontalAlignment="Right"
+					IsEnabled="{Binding SendButtonAvailable, RelativeSource = 
+		 		    {RelativeSource FindAncestor, AncestorType=UserControl}}"
+					Click="SendButton_Click"/>
 			<TextBox Grid.Column="0" BorderThickness="0" Background="#2A2A2A"
-					 Margin="0,0,4,0"/>
+					 Margin="0,0,4,0" Text="{Binding SendBoxText, RelativeSource = 
+		 		    {RelativeSource FindAncestor, AncestorType=UserControl}}"
+					 KeyDown="SendBox_KeyDown"/>
 		</DockPanel>
 	</Grid>
 </UserControl>

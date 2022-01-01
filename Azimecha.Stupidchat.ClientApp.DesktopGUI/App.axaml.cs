@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
     public class App : Application {

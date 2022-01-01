@@ -22,11 +22,11 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             this.AttachDevTools();
 #endif
 
-            _wkrNewConnection = new BackgroundWorker();
+            _wkrNewConnection = new BackgroundWorker() { WorkerSupportsCancellation = true };
             _wkrNewConnection.DoWork += NewConnectionWorker_DoWork;
             _wkrNewConnection.RunWorkerCompleted += NewConnectionWorker_RunWorkerCompleted;
 
-            _wkrRestoreConnections = new BackgroundWorker();
+            _wkrRestoreConnections = new BackgroundWorker() { WorkerSupportsCancellation = true };
             _wkrRestoreConnections.DoWork += RestoreConnectionsWorker_DoWork;
             _wkrRestoreConnections.RunWorkerCompleted += RestoreConnectionsWorker_RunWorkerCompleted;
             _wkrRestoreConnections.ProgressChanged += RestoreConnectionsWorker_ProgressChanged;
@@ -41,7 +41,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         }
 
         // init phase 1
-        private void MainWindow_Initialized(object sender, EventArgs e) {
+        private void MainWindow_Opened(object sender, EventArgs e) {
             byte[] arrPrivateKey = SecureSettings.GetPrivateKey();
             if (arrPrivateKey is null)
                 new UsernamePasswordDialog() { 
@@ -197,6 +197,14 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             _ctlServersStack.Children.Add(new Button() { Content = server.Info.Name, Tag = server });
             _ctlServer.Server = server;
             _ctlServerBorder.Child = _ctlServer;
+        }
+
+        private void MainWindow_Closed(object sender, EventArgs e) {
+            _client?.Dispose();
+            _wkrRestoreConnections.CancelAsync();
+            _wkrRestoreConnections.Dispose();
+            _wkrNewConnection.CancelAsync();
+            _wkrNewConnection.Dispose();
         }
     }
 }

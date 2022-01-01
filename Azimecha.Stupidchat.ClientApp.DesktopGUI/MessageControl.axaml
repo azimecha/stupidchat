@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="200"
+             x:Class="Azimecha.Stupidchat.ClientApp.DesktopGUI.MessageControl">
+	
+	<Border Background="#333333" CornerRadius="8">
+		<StackPanel Orientation="Vertical" Margin="16" Spacing="12">
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="20"/>
+					<RowDefinition Height="20"/>
+				</Grid.RowDefinitions>
+				
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="40"/>
+					<ColumnDefinition Width="12"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+				
+				<Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" 
+						Background="Transparent" CornerRadius="32" 
+						ClipToBounds="True">
+					<Image Source="{Binding SenderAvatar, RelativeSource = 
+					               {RelativeSource FindAncestor, AncestorType =
+						           UserControl}, Mode = OneWay}"/>
+				</Border>
+				
+				<TextBlock Grid.Row="0" Grid.Column="2"
+						   Text="{Binding Message, RelativeSource = {RelativeSource 
+						         FindAncestor, AncestorType = UserControl},
+								 Path = Message.Sender.DisplayName, Mode = OneWay}"
+						   VerticalAlignment="Center"/>
+				<TextBlock Grid.Row="1" Grid.Column="2" 
+						   Text="{Binding Message, RelativeSource = {RelativeSource 
+						         FindAncestor, AncestorType = UserControl},
+								 Path = Message.SentAt, Mode = OneWay}"
+						   VerticalAlignment="Center"/>
+			</Grid>
+			
+			<TextBlock TextWrapping="Wrap"
+				       Text="{Binding MessageText, RelativeSource = 
+					   {RelativeSource FindAncestor, AncestorType = UserControl},
+					   Mode = OneWay}"/>
+		</StackPanel>
+	</Border>
+	
+</UserControl>

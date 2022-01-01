@@ -5,7 +5,7 @@
         mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="480"
         x:Class="Azimecha.Stupidchat.ClientApp.DesktopGUI.MainWindow"
         Title="Chat Client" Background="#222222" Foreground="#EEEEEE"
-		Opened="MainWindow_Initialized">
+		Opened="MainWindow_Opened" Closed="MainWindow_Closed">
 	
 	<Grid>
 		<Grid.RowDefinitions>

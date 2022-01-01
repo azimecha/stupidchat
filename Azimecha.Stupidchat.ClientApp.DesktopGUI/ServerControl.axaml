@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="440"
              x:Class="Azimecha.Stupidchat.ClientApp.DesktopGUI.ServerControl">
-	
+
 	<Grid>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="40"/>
@@ -23,36 +23,33 @@
 		</Border>
 
 		<Border Grid.Row="0" Grid.Column="1" Background="#1A1A1A">
-			<TextBlock x:Name="ChannelNameText" Text="Channel Name" Margin="16,0,16,0"
+			<TextBlock x:Name="ChannelNameText" Text="" Margin="16,0,16,0"
 					   VerticalAlignment="Center" FontStyle="Italic"/>
 		</Border>
 
 		<Border Grid.Row="0" Grid.Column="2" Background="#1A1A1A"/>
 
 		<Border Grid.Row="1" Grid.Column="0" Background="#1A1A1A">
-			<ItemsControl x:Name="ChannelItems">
-				<ItemsControl.ItemTemplate>
-					<DataTemplate>
-						<Button Content="{Binding Info.Name}" 
-								Background="Transparent"
-								Margin="2"/>
-					</DataTemplate>
-				</ItemsControl.ItemTemplate>
-			</ItemsControl>
+			<StackPanel x:Name="ChannelsStack" Margin="16" Spacing="8">
+				<StackPanel.Styles>
+					<Style Selector="Button">
+						<Setter Property="Background" Value="Transparent"/>
+					</Style>
+				</StackPanel.Styles>
+			</StackPanel>
 		</Border>
 
 		<Border x:Name="ChannelBorder" Grid.Row="1" Grid.Column="1" />
 
 		<Border Grid.Row="1" Grid.Column="2" Background="#2A2A2A">
-			<ItemsControl x:Name="MemberItems">
-				<ItemsControl.ItemTemplate>
-					<DataTemplate>
-						<Button Content="{Binding DisplayName}"
-								Background="Transparent"
-								Margin="2"/>
-					</DataTemplate>
-				</ItemsControl.ItemTemplate>
-			</ItemsControl>
+			<StackPanel x:Name="MembersStack" Margin="16" Spacing="8">
+				<StackPanel.Styles>
+					<Style Selector="Button">
+						<Setter Property="Background" Value="Transparent"/>
+					</Style>
+				</StackPanel.Styles>
+			</StackPanel>
 		</Border>
 	</Grid>
+	
 </UserControl>

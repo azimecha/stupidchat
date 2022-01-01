@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using Azimecha.Stupidchat.Core;
 using Azimecha.Stupidchat.Client;
 using System.Collections.ObjectModel;
 
@@ -12,18 +13,18 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         public static readonly DirectProperty<ServerControl, IChannel> ChannelProperty =
             AvaloniaProperty.RegisterDirect<ServerControl, IChannel>(nameof(Channel), w => w.Channel, (w, v) => w.Channel = v);
 
-        private ObservableCollection<ChannelItem> _collChannels = new();
-        private ObservableCollection<MemberItem> _collMembers = new();
         private TextBlock _ctlServerNameText, _ctlChannelNameText;
+        private StackPanel _ctlChannelsStack, _ctlMembersStack;
+        private Border _ctlChannelBorder;
 
         public ServerControl() {
             InitializeComponent();
 
-            this.FindControl<ItemsControl>("ChannelItems").Items = _collChannels;
-            this.FindControl<ItemsControl>("MemberItems").Items = _collMembers;
-
             _ctlServerNameText = this.FindControl<TextBlock>("ServerNameText");
             _ctlChannelNameText = this.FindControl<TextBlock>("ChannelNameText");
+            _ctlChannelsStack = this.FindControl<StackPanel>("ChannelsStack");
+            _ctlMembersStack = this.FindControl<StackPanel>("MembersStack");
+            _ctlChannelBorder = this.FindControl<Border>("ChannelBorder");
         }
 
         private void InitializeComponent() {
@@ -42,52 +43,6 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             set => SetAndRaise(ChannelProperty, ref _channel, value);
         }
 
-        
-
-        private class ChannelItem : AvaloniaObject {
-            public static readonly DirectProperty<ChannelItem, string> NameProperty
-                = AvaloniaProperty.RegisterDirect<ChannelItem, string>(nameof(Name), i => i.Name);
-
-            public static readonly DirectProperty<ChannelItem, Core.Structures.ChannelType> ChannelTypeProperty
-                = AvaloniaProperty.RegisterDirect<ChannelItem, Core.Structures.ChannelType>(nameof(ChannelType), i => i.ChannelType);
-
-            public IChannel Channel;
-
-            private string _strName;
-            public string Name {
-                get => _strName;
-                set => SetAndRaise(NameProperty, ref _strName, value);
-            }
-
-            private Core.Structures.ChannelType _type;
-            public Core.Structures.ChannelType ChannelType {
-                get => _type;
-                set => SetAndRaise(ChannelTypeProperty, ref _type, value);
-            }
-        }
-
-        private class MemberItem : AvaloniaObject {
-            public static readonly DirectProperty<MemberItem, string> NameProperty
-                = AvaloniaProperty.RegisterDirect<MemberItem, string>(nameof(Name), i => i.Name);
-
-            public static readonly DirectProperty<MemberItem, Avalonia.Media.Imaging.Bitmap> ProfileImageProperty
-                = AvaloniaProperty.RegisterDirect<MemberItem, Avalonia.Media.Imaging.Bitmap>(nameof(ProfileImage), i => i.ProfileImage);
-
-            public IMember Member;
-
-            private string _strName;
-            public string Name {
-                get => _strName;
-                set => SetAndRaise(NameProperty, ref _strName, value);
-            }
-
-            private Avalonia.Media.Imaging.Bitmap _bmProfile;
-            public Avalonia.Media.Imaging.Bitmap ProfileImage {
-                get => _bmProfile;
-                set => SetAndRaise(ProfileImageProperty, ref _bmProfile, value);
-            }
-        }
-
         protected override void OnPropertyChanged<T>(AvaloniaPropertyChangedEventArgs<T> change) {
             if ((change.Property == ServerProperty) && change.IsEffectiveValueChange)
                 OnServerChanged();
@@ -99,22 +54,40 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         }
 
         private void OnServerChanged() {
-            _collChannels.Clear();
-            _collMembers.Clear();
+            _ctlServerNameText.Text = _server?.Info.Name ?? "";
+
+            _channel = null;
+            _ctlChannelsStack.Children.Clear();
+            _ctlMembersStack.Children.Clear();
 
             if (!(_server is null)) {
-                _ctlServerNameText.Text = _server.Info.Name;
+                foreach (IChannel chan in _server.Channels) {
+                    Button btn = new Button() { Content = chan.Info.Name, Tag = chan };
+                    btn.Click += ChannelButton_Click;
+                    _ctlChannelsStack.Children.Add(btn);
+                }
 
-                foreach (IChannel channel in _server.Channels)
-                    _collChannels.Add(new ChannelItem() { Channel = channel, ChannelType = channel.Info.Type, Name = channel.Info.Name });
-
-                foreach (IMember member in _server.Members)
-                    _collMembers.Add(new MemberItem() { Member = member, Name = member.DisplayName });
+                foreach (IMember memb in _server.Members) {
+                    Button btn = new Button() { Content = memb.DisplayName, Tag = memb };
+                    btn.Click += MemberButton_Click;
+                    _ctlMembersStack.Children.Add(btn);
+                }
             }
         }
 
         private void OnChannelChanged() {
             _ctlChannelNameText.Text = _channel?.Info.Name ?? "";
+            _ctlChannelBorder.Child = (_channel is null) ? null : new TextChannelControl() { Channel = _channel };
+        }
+
+        private void ChannelButton_Click(object objSender, Avalonia.Interactivity.RoutedEventArgs args) {
+            if ((objSender is Button btn) && (btn.Tag is IChannel chan))
+                Channel = chan;
+        }
+
+        private void MemberButton_Click(object objSender, Avalonia.Interactivity.RoutedEventArgs args) {
+            if ((objSender is Button btn) && (btn.Tag is IMember memb))
+                new MessageDialog() { Title = "User Info", MessageText = memb.User.Profile.ToDataString("\n", ": ") }.Show();
         }
     }
 }
