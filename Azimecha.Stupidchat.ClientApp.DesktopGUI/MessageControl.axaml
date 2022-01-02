@@ -19,13 +19,8 @@
 					<ColumnDefinition Width="*"/>
 				</Grid.ColumnDefinitions>
 				
-				<Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" 
-						Background="Transparent" CornerRadius="32" 
-						ClipToBounds="True">
-					<Image Source="{Binding SenderAvatar, RelativeSource = 
-					               {RelativeSource FindAncestor, AncestorType =
-						           UserControl}, Mode = OneWay}"/>
-				</Border>
+				<Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"
+						x:Name="AvatarBorder"/>
 				
 				<TextBlock Grid.Row="0" Grid.Column="2"
 						   Text="{Binding Message, RelativeSource = {RelativeSource 

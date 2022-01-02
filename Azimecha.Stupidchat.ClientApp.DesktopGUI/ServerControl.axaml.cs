@@ -6,6 +6,7 @@ using Azimecha.Stupidchat.Client;
 using System.Collections.ObjectModel;
 using System;
 using System.Linq;
+using Avalonia.Controls.Primitives;
 
 namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
     public partial class ServerControl : UserControl {
@@ -18,6 +19,9 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private TextBlock _ctlServerNameText, _ctlChannelNameText;
         private StackPanel _ctlChannelsStack, _ctlMembersStack;
         private Border _ctlChannelBorder;
+        private Popup _ctlMemberPopup;
+        private ProfileControl _ctlMemberProfile;
+
         private Action<IMember> _procOnMemberAdded, _procOnMemberChanged, _procOnMemberRemoved;
         private Action<IChannel> _procOnChannelAdded, _procOnChannelModified, _procOnChannelRemoved;
 
@@ -29,6 +33,10 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             _ctlChannelsStack = this.FindControl<StackPanel>("ChannelsStack");
             _ctlMembersStack = this.FindControl<StackPanel>("MembersStack");
             _ctlChannelBorder = this.FindControl<Border>("ChannelBorder");
+            _ctlMemberPopup = this.FindControl<Popup>("MemberPopup");
+
+            _ctlMemberProfile = new ProfileControl();
+            _ctlMemberPopup.Child = _ctlMemberProfile;
 
             _procOnMemberAdded = new Action<IMember>(OnMemberAdded);
             _procOnMemberChanged = new Action<IMember>(OnMemberChanged);
@@ -108,8 +116,11 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         }
 
         private void MemberButton_Click(object objSender, Avalonia.Interactivity.RoutedEventArgs args) {
-            if ((objSender is Button btn) && (btn.Tag is IMember memb))
-                new MessageDialog() { Title = "User Info", MessageText = memb.User.Profile.ToDataString("\n", ": ") }.Show();
+            if ((objSender is Button btn) && (btn.Tag is IMember memb)) {
+                _ctlMemberPopup.PlacementTarget = btn;
+                _ctlMemberProfile.User = memb.User;
+                _ctlMemberPopup.Open();
+            }
         }
 
         private void AddMemberControl(IMember memb) {

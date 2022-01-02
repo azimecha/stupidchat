@@ -412,6 +412,8 @@ namespace Azimecha.Stupidchat.Client {
                 _user = server.AssociatedChatClient.MemberToUser(info);
                 _info = info;
                 _objInfoMutex = new object();
+
+                _user?.EnsureMembershipExists(this);
             }
 
             internal void UpdateInfo(MemberInfo info) {
@@ -637,6 +639,13 @@ namespace Azimecha.Stupidchat.Client {
                 _profile = profile;
                 _objProfileMutex = new object();
                 _tfAvatar = new Lazy<TemporaryFile>(DownloadAvatar, LazyThreadSafetyMode.ExecutionAndPublication);
+            }
+
+            internal void EnsureMembershipExists(Member memb) {
+                lock (_lstMemberships) {
+                    if (!_lstMemberships.Contains(memb))
+                        _lstMemberships.Add(memb);
+                }
             }
 
             internal void AddMembership(Member memb) {

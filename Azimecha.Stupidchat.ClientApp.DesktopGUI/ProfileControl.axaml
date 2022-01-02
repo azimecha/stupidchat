@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="260" d:DesignHeight="300"
+        x:Class="Azimecha.Stupidchat.ClientApp.DesktopGUI.ProfileControl"
+        Foreground="#EEEEEE" Width="260">
+
+	<!-- Margin ensures space for shadow -->
+    <Grid Margin="8,4,8,8">
+		<!-- Shadow creation border -->
+        <Border CornerRadius="8" BoxShadow="0 2 3 #77000000"/>
+
+		<!-- Content clipping border -->
+        <Border CornerRadius="8" ClipToBounds="True" Background="#222222">
+            <StackPanel>
+                <Border Background="#111111">
+                    <Grid Margin="16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24"/>
+                            <RowDefinition Height="24"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"
+                                x:Name="AvatarBorder"/>
+
+                        <TextBlock Grid.Row="0" Grid.Column="1" Margin="4,0,0,0"
+                                   Text="{Binding User, RelativeSource = 
+                                         {RelativeSource FindAncestor, 
+                                         AncestorType = UserControl},
+                                         Path = User.DisplayName, Mode = OneWay}"
+                                   VerticalAlignment="Center" FontWeight="Bold"/>
+
+                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="4,0,0,0"
+                                    Orientation="Horizontal" VerticalAlignment="Center"
+                                    Spacing="2">
+                            <TextBlock Text="@" Opacity="0.7"/>
+                            <TextBlock Text="{Binding Username, RelativeSource = 
+                                             {RelativeSource FindAncestor, 
+                                             AncestorType = UserControl},
+                                             Mode = OneWay}"/>
+                        </StackPanel>
+
+                    </Grid>
+                </Border>
+
+                <ItemsControl Items="{Binding Memberships, RelativeSource = 
+                                     {RelativeSource FindAncestor, 
+                                     AncestorType = UserControl}, Mode = OneWay}"
+                              Margin="16">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Vertical" Spacing="4">
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Source="{Binding ServerIconURL}"
+                                           Width="16" Height="16"/>
+                                    <TextBlock Text="{Binding ServerName}"
+											   FontWeight="Bold"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="Known as:" Opacity="0.7"/>
+                                    <TextBlock Text="{Binding KnownAsName}"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="Rank:" Opacity="0.7"/>
+                                    <TextBlock Text="{Binding Power}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+    </Grid>
+    
+</UserControl>

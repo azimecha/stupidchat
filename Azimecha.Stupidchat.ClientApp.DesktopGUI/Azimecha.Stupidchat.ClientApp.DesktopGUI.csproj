@@ -29,6 +29,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Update="ProfileControl.axaml.cs">
+		  <DependentUpon>ProfileControl.axaml</DependentUpon>
+		</Compile>
 		<Compile Update="TextEntryDialog.axaml.cs">
 			<DependentUpon>TextEntryDialog.axaml</DependentUpon>
 		</Compile>

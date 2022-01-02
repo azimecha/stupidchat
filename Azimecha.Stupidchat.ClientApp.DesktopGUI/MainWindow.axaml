@@ -31,14 +31,16 @@
 						</Button.ContextMenu>
 					</Button>
 				</StackPanel>
-				
-				<StackPanel x:Name="ServersStack" Orientation="Horizontal" 
-							Spacing="4">
-					<!--
+
+				<ScrollViewer>
+					<StackPanel x:Name="ServersStack" Orientation="Horizontal"
+								Spacing="4">
+						<!--
 					<Button Content="Server 1"/>
 					<Button Content="Server 2"/>
 					-->
-				</StackPanel>
+					</StackPanel>
+				</ScrollViewer>
 			</DockPanel>
 		</Border>
 

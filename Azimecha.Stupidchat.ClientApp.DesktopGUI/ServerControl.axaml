@@ -5,51 +5,58 @@
              mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="440"
              x:Class="Azimecha.Stupidchat.ClientApp.DesktopGUI.ServerControl">
 
-	<Grid>
-		<Grid.RowDefinitions>
-			<RowDefinition Height="40"/>
-			<RowDefinition Height="*"/>
-		</Grid.RowDefinitions>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="200"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Row="0" Grid.Column="0" Background="#1A1A1A">
+            <TextBlock x:Name="ServerNameText" Text="Server Name" Margin="16,0,16,0"
+                       VerticalAlignment="Center" FontWeight="Bold"/>
+        </Border>
+
+        <Border Grid.Row="0" Grid.Column="1" Background="#1A1A1A">
+            <TextBlock x:Name="ChannelNameText" Text="" Margin="16,0,16,0"
+                       VerticalAlignment="Center" FontStyle="Italic"/>
+        </Border>
+
+        <Border Grid.Row="0" Grid.Column="2" Background="#1A1A1A"/>
+
+        <Border Grid.Row="1" Grid.Column="0" Background="#1A1A1A">
+            <ScrollViewer>
+                <StackPanel x:Name="ChannelsStack" Margin="16" Spacing="8">
+                    <StackPanel.Styles>
+                        <Style Selector="Button">
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                    </StackPanel.Styles>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <Border x:Name="ChannelBorder" Grid.Row="1" Grid.Column="1" />
+
+        <Border Grid.Row="1" Grid.Column="2" Background="#2A2A2A">
+            <ScrollViewer>
+                <StackPanel x:Name="MembersStack" Margin="16" Spacing="8">
+                    <StackPanel.Styles>
+                        <Style Selector="Button">
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                    </StackPanel.Styles>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
 		
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="200"/>
-			<ColumnDefinition Width="*"/>
-			<ColumnDefinition Width="200"/>
-		</Grid.ColumnDefinitions>
-
-		<Border Grid.Row="0" Grid.Column="0" Background="#1A1A1A">
-			<TextBlock x:Name="ServerNameText" Text="Server Name" Margin="16,0,16,0"
-					   VerticalAlignment="Center" FontWeight="Bold"/>
-		</Border>
-
-		<Border Grid.Row="0" Grid.Column="1" Background="#1A1A1A">
-			<TextBlock x:Name="ChannelNameText" Text="" Margin="16,0,16,0"
-					   VerticalAlignment="Center" FontStyle="Italic"/>
-		</Border>
-
-		<Border Grid.Row="0" Grid.Column="2" Background="#1A1A1A"/>
-
-		<Border Grid.Row="1" Grid.Column="0" Background="#1A1A1A">
-			<StackPanel x:Name="ChannelsStack" Margin="16" Spacing="8">
-				<StackPanel.Styles>
-					<Style Selector="Button">
-						<Setter Property="Background" Value="Transparent"/>
-					</Style>
-				</StackPanel.Styles>
-			</StackPanel>
-		</Border>
-
-		<Border x:Name="ChannelBorder" Grid.Row="1" Grid.Column="1" />
-
-		<Border Grid.Row="1" Grid.Column="2" Background="#2A2A2A">
-			<StackPanel x:Name="MembersStack" Margin="16" Spacing="8">
-				<StackPanel.Styles>
-					<Style Selector="Button">
-						<Setter Property="Background" Value="Transparent"/>
-					</Style>
-				</StackPanel.Styles>
-			</StackPanel>
-		</Border>
-	</Grid>
-	
+		<Popup x:Name="MemberPopup" IsOpen="False" StaysOpen="False"
+			   PlacementMode="Bottom"/>
+    </Grid>
+    
 </UserControl>

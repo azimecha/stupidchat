@@ -31,5 +31,16 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
         public static void ScrollDown(this Avalonia.Controls.ScrollViewer ctlScrollViewer, double fAmount)
             => _infScrollbarValueProperty.SetValue(ctlScrollViewer, (double)_infScrollbarValueProperty.GetValue(ctlScrollViewer) + fAmount);
+
+        public static Avalonia.Controls.Window GetWindow(this Avalonia.Controls.IControl ctl) {
+            while (ctl is not null) {
+                if (ctl is Avalonia.Controls.Window wnd)
+                    return wnd;
+
+                ctl = ctl.Parent;
+            }
+
+            return null;
+        }
     }
 }
