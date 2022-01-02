@@ -14,6 +14,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private string _strNewConnectionURL;
         private ServerControl _ctlServer;
         private Border _ctlServerBorder;
+        private Button _ctlMenuButton;
 
         // init phase 0
         public MainWindow() {
@@ -34,6 +35,9 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             _ctlServersStack = this.FindControl<StackPanel>("ServersStack");
             _ctlServerBorder = this.FindControl<Border>("ServerBorder");
             _ctlServer = new ServerControl();
+            _ctlMenuButton = this.FindControl<Button>("MenuButton");
+
+            Settings.Instance.ProfileChanged += Settings_ProfileChanged;
         }
 
         private void InitializeComponent() {
@@ -68,6 +72,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
             SecureSettings.SetPrivateKey(arrPrivateKey);
             Settings.Instance.Username = info.Value.Username;
+            Settings.Instance.Save();
 
             FinishInitialization(arrPrivateKey);
         }
@@ -75,6 +80,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         // init phase 3
         private void FinishInitialization(byte[] arrPrivateKey) {
             _client = new ChatClient(arrPrivateKey);
+            _client.MyProfile = Settings.Instance.Profile;
 
             if (Settings.Instance.Servers.Count > 0)
                 _wkrRestoreConnections.RunWorkerAsync(Settings.Instance.Servers.ToArray());
@@ -205,6 +211,25 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             _wkrRestoreConnections.Dispose();
             _wkrNewConnection.CancelAsync();
             _wkrNewConnection.Dispose();
+        }
+
+        private void Settings_ProfileChanged(Core.Structures.UserProfile profile) {
+            if (!(_client is null))
+                _client.MyProfile = profile;
+        }
+
+        private void MenuButton_Click(object objSender, Avalonia.Interactivity.RoutedEventArgs e) {
+            ContextMenu menu = _ctlMenuButton.ContextMenu;
+            menu.PlacementTarget = _ctlMenuButton;
+            menu.Open();
+        }
+
+        private void EditProfileItem_Click(object objSender, Avalonia.Interactivity.RoutedEventArgs e) { }
+
+        private void LogOutItem_Click(object objSender, Avalonia.Interactivity.RoutedEventArgs e) {
+            Settings.Discard();
+            SecureSettings.Discard();
+            Environment.Exit(0);
         }
     }
 }

@@ -48,6 +48,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             procModifyProfile(ref profCur);
             profCur.UpdateTime = DateTime.Now.Ticks;
             Profile = profCur;
+            ProfileChanged?.Invoke(profCur);
         }
 
         public void Save() {
@@ -64,6 +65,13 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
             instance.Save();
             return instance;
+        }
+
+        public event Action<Core.Structures.UserProfile> ProfileChanged;
+
+        public static void Discard() {
+            System.IO.File.Delete(_strFilePath);
+            _instance = new Lazy<Settings>(LoadOrCreate, System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
         }
     }
 

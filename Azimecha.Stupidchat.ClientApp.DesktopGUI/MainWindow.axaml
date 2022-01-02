@@ -15,8 +15,23 @@
 
 		<Border Grid.Row="0" Background="#111111">
 			<DockPanel Margin="6,0,6,0">
-				<Button x:Name="AddServerButton" DockPanel.Dock="Right"
-						Content="Add Server" Click="AddServer_Click"/>
+				<StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
+							Spacing="4">
+					<Button x:Name="AddServerButton"
+							Click="AddServer_Click" Content="&#xFF0B;"/>
+					<Button x:Name="MenuButton" DockPanel.Dock="Right"
+							Click="MenuButton_Click" Content="&#x2630;">
+						<Button.ContextMenu>
+							<ContextMenu>
+								<MenuItem Header="Edit profile"
+										  Click="EditProfileItem_Click"/>
+								<MenuItem Header="Log out"
+										  Click="LogOutItem_Click"/>
+							</ContextMenu>
+						</Button.ContextMenu>
+					</Button>
+				</StackPanel>
+				
 				<StackPanel x:Name="ServersStack" Orientation="Horizontal" 
 							Spacing="4">
 					<!--
@@ -30,8 +45,10 @@
 		<Border x:Name="ServerBorder" Grid.Row="1">
 			<Border HorizontalAlignment="Center" VerticalAlignment="Center">
 				<StackPanel>
-					<TextBlock Text="Welcome" FontSize="32"/>
-					<TextBlock Text="Select a server" HorizontalAlignment="Center"/>
+					<TextBlock Text="Welcome" FontSize="32"
+							   HorizontalAlignment="Center"/>
+					<TextBlock Text="Use the &#xFF0B; button to add a server"
+							   HorizontalAlignment="Center"/>
 				</StackPanel>
 			</Border>
 		</Border>

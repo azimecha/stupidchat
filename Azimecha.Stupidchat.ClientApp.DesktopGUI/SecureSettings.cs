@@ -27,5 +27,9 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
                 ? System.Security.Cryptography.ProtectedData.Protect(arrKey, null, System.Security.Cryptography.DataProtectionScope.CurrentUser)
                 : arrKey);
         }
+
+        public static void Discard() {
+            System.IO.File.Delete(_strFilePath);
+        }
     }
 }

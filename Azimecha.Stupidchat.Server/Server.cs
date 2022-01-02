@@ -243,7 +243,10 @@ namespace Azimecha.Stupidchat.Server {
                 }
             });
 
-            if (bNewMember) MemberJoined?.Invoke(member);
+            if (bNewMember) {
+                MemberJoined?.Invoke(member);
+                BroadcastNotification(new Core.Notifications.MemberJoinedNotification() { Member = member.ToMemberInfo() });
+            }
         }
 
         private void BroadcastNotification(NotificationMessage msgNotification) {
@@ -380,17 +383,23 @@ namespace Azimecha.Stupidchat.Server {
                 (req.SignedData, req.Signature, conn.ClientPublicKey);
 
             Records.MemberRecord memb = null;
+            bool bDidUpdate = false;
 
             SQLite.SQLiteConnection db = Database;
             db.RunInTransaction(() => {
                 memb = GetMemberRecord(conn.ClientPublicKey);
-                memb.SignedProfile = req.SignedData;
-                memb.ProfileSignature = req.Signature;
-                db.Update(memb);
+                if (memb.Flatten().LastProfileUpdate.Ticks < profile.UpdateTime) {
+                    memb.SignedProfile = req.SignedData;
+                    memb.ProfileSignature = req.Signature;
+                    db.Update(memb);
+                    bDidUpdate = true;
+                }
             });
 
-            BroadcastNotification(new Core.Notifications.MemberInfoChangedNotification() { Member = memb.ToMemberInfo() });
-            MemberProfileUpdated?.Invoke(memb);
+            if (bDidUpdate) {
+                BroadcastNotification(new Core.Notifications.MemberInfoChangedNotification() { Member = memb.ToMemberInfo() });
+                MemberProfileUpdated?.Invoke(memb);
+            }
 
             return new Core.Requests.GenericSuccessResponse();
         }

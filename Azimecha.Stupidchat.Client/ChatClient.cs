@@ -81,6 +81,13 @@ namespace Azimecha.Stupidchat.Client {
             }
 
             ConnectedToServer?.Invoke(server);
+
+            SignedStructSerializer.SignedData signedProfile = SignedStructSerializer.Serialize(MyProfile, _arrPublicKey, _arrPrivateKey);
+            server.Connection.PerformRequest(new UpdateProfileRequest() {
+                Signature = signedProfile.Signature,
+                SignedData = signedProfile.Data
+            });
+
             return server;
         }
 
@@ -642,7 +649,7 @@ namespace Azimecha.Stupidchat.Client {
 
             internal void UpdateProfile(UserProfile profile) {
                 lock (_objProfileMutex) {
-                    if (profile.UpdateTime < _profile.UpdateTime)
+                    if (profile.UpdateTime > _profile.UpdateTime)
                         _profile = profile;
                 }
             }

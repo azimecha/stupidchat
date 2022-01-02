@@ -69,6 +69,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
                     (Properties.Settings.Default.Profile);
 
             profile.Username = strUsername;
+            profile.UpdateTime = DateTime.Now.Ticks;
             _client.MyProfile = profile;
 
             if ((Properties.Settings.Default.Servers?.Count ?? 0) > 0) {
