@@ -91,6 +91,9 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
                 _server.ChannelAdded += _procOnChannelAdded;
                 _server.ChannelRemoved += _procOnChannelRemoved;
+
+                if (_server.Channels.FirstOrDefault() is IChannel chanFirst)
+                    Channel = chanFirst;
             }
         }
 

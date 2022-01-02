@@ -47,7 +47,7 @@
 				<StackPanel>
 					<TextBlock Text="Welcome" FontSize="32"
 							   HorizontalAlignment="Center"/>
-					<TextBlock Text="Use the &#xFF0B; button to add a server"
+					<TextBlock x:Name="SubtitleText" Text="Loading..."
 							   HorizontalAlignment="Center"/>
 				</StackPanel>
 			</Border>

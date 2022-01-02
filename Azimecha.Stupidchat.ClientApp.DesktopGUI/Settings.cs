@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
-    [DataContract]
     public class Settings {
         private static string _strFilePath = System.IO.Path.Combine(Program.DataFolder, "settings.json");
         private static Lazy<Settings> _instance = new Lazy<Settings>(LoadOrCreate, System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
@@ -16,30 +16,35 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             Servers = new List<KnownServer>();
         }
 
+        [Newtonsoft.Json.JsonIgnore]
         public string Username {
             get => Profile.Username;
             set => ModifyProfile((ref Core.Structures.UserProfile p) => p.Username = value);
         }
 
+        [Newtonsoft.Json.JsonIgnore]
         public string DisplayName {
             get => Profile.DisplayName;
             set => ModifyProfile((ref Core.Structures.UserProfile p) => p.DisplayName = value);
         }
 
+        [Newtonsoft.Json.JsonIgnore]
         public string Bio {
             get => Profile.Bio;
             set => ModifyProfile((ref Core.Structures.UserProfile p) => p.Bio = value);
         }
 
+        [Newtonsoft.Json.JsonIgnore]
         public string AvatarURL {
             get => Profile.AvatarURL;
             set => ModifyProfile((ref Core.Structures.UserProfile p) => p.AvatarURL = value);
         }
 
+        [Newtonsoft.Json.JsonIgnore]
         public DateTime ProfileUpdateTime => new DateTime(Profile.UpdateTime);
 
-        [DataMember] public Core.Structures.UserProfile Profile { get; private set; }
-        [DataMember] public List<KnownServer> Servers { get; private set; }
+        public Core.Structures.UserProfile Profile { get; private set; }
+        public List<KnownServer> Servers { get; private set; }
 
         private delegate void ProfileModifierDelegate(ref Core.Structures.UserProfile prof);
 
@@ -52,15 +57,20 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         }
 
         public void Save() {
-            System.IO.File.WriteAllText(_strFilePath, System.Text.Json.JsonSerializer.Serialize(this));
+            System.IO.File.WriteAllText(_strFilePath, Newtonsoft.Json.JsonConvert.SerializeObject(this));
         }
 
         private static Settings LoadOrCreate() {
-            Settings instance;
+            Settings instance = null;
 
-            if (System.IO.File.Exists(_strFilePath))
-                instance = System.Text.Json.JsonSerializer.Deserialize<Settings>(System.IO.File.ReadAllText(_strFilePath));
-            else
+            try {
+                if (System.IO.File.Exists(_strFilePath))
+                    instance = Newtonsoft.Json.JsonConvert.DeserializeObject<Settings>(System.IO.File.ReadAllText(_strFilePath));
+            } catch (Exception ex) {
+                Debug.WriteLine($"[{nameof(Settings)}/{nameof(LoadOrCreate)}] Error loading settings: {ex}");
+            }
+            
+            if (instance is null)
                 instance = new Settings();
 
             instance.Save();

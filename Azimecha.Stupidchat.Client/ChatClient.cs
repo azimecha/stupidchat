@@ -151,6 +151,8 @@ namespace Azimecha.Stupidchat.Client {
 
             internal Server(ChatClient cclient, string strAddress, int nPort, ReadOnlySpan<byte> spanPrivateKey) {
                 _cclient = cclient;
+                Address = strAddress;
+                Port = nPort;
 
                 System.Net.Sockets.TcpClient client = new System.Net.Sockets.TcpClient();
                 client.Connect(strAddress, nPort);

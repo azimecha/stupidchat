@@ -15,6 +15,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private ServerControl _ctlServer;
         private Border _ctlServerBorder;
         private Button _ctlMenuButton;
+        private TextBlock _ctlSubtitleText;
 
         // init phase 0
         public MainWindow() {
@@ -24,10 +25,13 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 #endif
 
             _wkrNewConnection = new BackgroundWorker() { WorkerSupportsCancellation = true };
+            _wkrNewConnection.WorkerSupportsCancellation = true;
             _wkrNewConnection.DoWork += NewConnectionWorker_DoWork;
             _wkrNewConnection.RunWorkerCompleted += NewConnectionWorker_RunWorkerCompleted;
 
             _wkrRestoreConnections = new BackgroundWorker() { WorkerSupportsCancellation = true };
+            _wkrRestoreConnections.WorkerReportsProgress = true;
+            _wkrRestoreConnections.WorkerSupportsCancellation = true;
             _wkrRestoreConnections.DoWork += RestoreConnectionsWorker_DoWork;
             _wkrRestoreConnections.RunWorkerCompleted += RestoreConnectionsWorker_RunWorkerCompleted;
             _wkrRestoreConnections.ProgressChanged += RestoreConnectionsWorker_ProgressChanged;
@@ -36,6 +40,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             _ctlServerBorder = this.FindControl<Border>("ServerBorder");
             _ctlServer = new ServerControl();
             _ctlMenuButton = this.FindControl<Button>("MenuButton");
+            _ctlSubtitleText = this.FindControl<TextBlock>("SubtitleText");
 
             Settings.Instance.ProfileChanged += Settings_ProfileChanged;
         }
@@ -84,6 +89,14 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
             if (Settings.Instance.Servers.Count > 0)
                 _wkrRestoreConnections.RunWorkerAsync(Settings.Instance.Servers.ToArray());
+            else
+                PostInitialization();
+        }
+
+        // init phase 4 (after restore if applicable)
+        private void PostInitialization() {
+            if (_ctlServer.Server is null)
+                _ctlSubtitleText.Text = "Press \xFF0B to add a server";
         }
 
         private struct RestorationResult {
@@ -106,7 +119,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
                 try {
                     IServer server = _client.ConnectToServer(ks.Address, ks.Port);
-                    if (server.ID != ks.PublicKey) {
+                    if (!server.ID.SequenceEqual(ks.PublicKey)) {
                         server.Disconnect();
                         throw new ServerKeyMismatchException();
                     }
@@ -122,6 +135,8 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
                 MessageDialog.ShowMessage(this, "Connection Restoration Error", $"Error reconnecting to known servers: {e.Error}");
             else
                 Debug.WriteLine($"[{nameof(MainWindow)}] Connection restoration complete");
+
+            PostInitialization();
         }
 
         private void RestoreConnectionsWorker_ProgressChanged(object sender, ProgressChangedEventArgs e) {
@@ -132,7 +147,8 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
                     + $"{result.ServerBasicInfo.Port}:\n{result.Error}");
                 MessageDialog.ShowMessage(this, "Connection Error", $"Error reconnecting to {result.ServerBasicInfo.Address}:{result.ServerBasicInfo.Port}:\n"
                     + $"{result.Error.Message} ({result.Error.GetType().FullName})");
-                return;
+                Settings.Instance.Servers.Remove(result.ServerBasicInfo);
+                Settings.Instance.Save();
             }
 
             if (!(result.Result is null))
@@ -195,8 +211,17 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
                 MessageDialog.ShowMessage(this, "Connection Error", $"Error connecting to {_strNewConnectionURL}:\n{ex.Message} ({ex.GetType().FullName})");
             }
 
-            if (e.Result is IServer server)
+            if (e.Result is IServer server) {
                 FinishAddingServer(server);
+
+                Settings.Instance.Servers.Add(new KnownServer() {
+                    Address = server.Address,
+                    Port = server.Port,
+                    PublicKey = server.ID.ToArray()
+                });
+
+                Settings.Instance.Save();
+            }
         }
 
         private void FinishAddingServer(IServer server) {

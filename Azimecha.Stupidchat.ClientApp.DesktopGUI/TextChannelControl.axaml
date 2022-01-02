@@ -10,7 +10,7 @@
 			<RowDefinition Height="40"/>
 		</Grid.RowDefinitions>
 
-		<ScrollViewer>
+		<ScrollViewer x:Name="MessagesScrollViewer">
 			<StackPanel x:Name="MessagesStack" Grid.Row="0"
 						Margin="16" Spacing="16"/>
 		</ScrollViewer>
