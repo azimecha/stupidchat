@@ -8,9 +8,12 @@
 		<Grid.RowDefinitions>
 			<RowDefinition Height="*"/>
 			<RowDefinition Height="40"/>
+			<RowDefinition Height="4"/>
 		</Grid.RowDefinitions>
 
-		<ScrollViewer x:Name="MessagesScrollViewer">
+		<ScrollViewer x:Name="MessagesScrollViewer"
+			          Initialized="MessagesScrollViewer_Initialized"
+					  ScrollChanged="MessagesScrollViewer_ScrollChanged">
 			<StackPanel x:Name="MessagesStack" Grid.Row="0"
 						Margin="16" Spacing="16"/>
 		</ScrollViewer>
@@ -21,7 +24,7 @@
 					IsEnabled="{Binding SendButtonAvailable, RelativeSource = 
 		 		    {RelativeSource FindAncestor, AncestorType=UserControl}}"
 					Click="SendButton_Click"/>
-			<TextBox Grid.Column="0" BorderThickness="0" Background="#2A2A2A"
+			<TextBox Grid.Column="0" BorderThickness="0" Background="#333333"
 					 Margin="0,2,4,2" Text="{Binding SendBoxText, RelativeSource = 
 		 		    {RelativeSource FindAncestor, AncestorType=UserControl}}"
 					 KeyDown="SendBox_KeyDown" Watermark="Type a message..."/>

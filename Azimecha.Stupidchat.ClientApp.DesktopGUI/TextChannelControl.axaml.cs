@@ -21,7 +21,11 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private ScrollViewer _ctlMessagesScrollViewer;
         private StackPanel _ctlMessagesStack;
         private BackgroundWorker _wkrDownloadMessages;
-        private bool _bInitialDownload;
+        private Avalonia.Threading.DispatcherTimer _tmrScrollToEnd;
+        private Avalonia.Threading.DispatcherTimer _tmrScrollDown;
+
+        private bool _bInitialLoadComplete, _bReachedMessageZero;
+        private double _fScrollDownAmount = 0.0;
 
         private Action<IMessage> _procOnMessagePosted;
         private Action<IMessage, IMessage> _procOnMessageDeleted;
@@ -43,6 +47,12 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
             _procOnMessagePosted = new Action<IMessage>(OnMessagePosted);
             _procOnMessageDeleted = new Action<IMessage, IMessage>(OnMessageDeleted);
+
+            _tmrScrollToEnd = new Avalonia.Threading.DispatcherTimer(TimeSpan.FromMilliseconds(100), Avalonia.Threading.DispatcherPriority.ApplicationIdle,
+                ScrollToEndTimer_Tick);
+
+            _tmrScrollDown = new Avalonia.Threading.DispatcherTimer(TimeSpan.FromMilliseconds(100), Avalonia.Threading.DispatcherPriority.ApplicationIdle,
+                ScrollDownTimer_Tick);
         }
 
         private void InitializeComponent() {
@@ -80,6 +90,8 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
         private void OnChannelChanged(IChannel chanOld) {
             _ctlMessagesStack.Children.Clear();
+            _bInitialLoadComplete = false;
+            _bReachedMessageZero = false;
 
             if (!(chanOld is null)) {
                 chanOld.MessagePosted -= _procOnMessagePosted;
@@ -89,7 +101,6 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             if (!(_channel is null)) {
                 _channel.MessagePosted += _procOnMessagePosted;
                 _channel.MessageDeleted += _procOnMessageDeleted;
-                _bInitialDownload = true;
                 _wkrDownloadMessages.RunWorkerAsync(new MessagesDownloadParams() { Count = 10, StartingOffset = 0 });
             }
 
@@ -115,10 +126,10 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             if (e.Error is Exception ex)
                 new MessageDialog() { Title = "Error Downloading", MessageText = $"Error downloading messages:\n{ex}" }.Show();
 
-            if (_bInitialDownload) {
-                _bInitialDownload = false;
-                _ctlMessagesScrollViewer.ScrollToEnd();
-            }
+            if (!_bInitialLoadComplete)
+                _tmrScrollToEnd.Start();
+            else
+                _ctlMessagesScrollViewer.Offset += new Vector(0.0, 100.0);
         }
 
         private void DownloadMessagesWorker_ProgressChanged(object sender, ProgressChangedEventArgs e) {
@@ -129,12 +140,12 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private void AddControlForMessage(IMessage msg) {
             int nIndex = 0;
 
-            foreach (IControl ctl in _ctlMessagesStack.Children) {
+            foreach (IControl ctlCur in _ctlMessagesStack.Children) {
                 long nMessageIndex;
 
-                if ((ctl is MessageControl ctlMessage) && (ctlMessage.Message is IMessage msgCur))
+                if ((ctlCur is MessageControl ctlCurMessage) && (ctlCurMessage.Message is IMessage msgCur))
                     nMessageIndex = msgCur.IndexInChannel;
-                else if ((ctl is TextBlock ctlTombstone) && (ctlTombstone.Tag is long nTombstoneMessageIndex))
+                else if ((ctlCur is TextBlock ctlTombstone) && (ctlTombstone.Tag is long nTombstoneMessageIndex))
                     nMessageIndex = nTombstoneMessageIndex;
                 else
                     nMessageIndex = -1;
@@ -145,14 +156,19 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
                 nIndex++;
             }
 
-            bool bAutoscroll = _ctlMessagesScrollViewer.IsAtBottom() && (nIndex == _ctlMessagesStack.Children.Count);
-
-            _ctlMessagesStack.Children.Insert(nIndex, msg.IsDeletedMessageTombstone
+            Control ctlMessage = msg.IsDeletedMessageTombstone
                 ? new TextBlock() { Text = "(deleted message)", Opacity = 0.5, Tag = msg.IndexInChannel }
-                : new MessageControl() { Message = msg });
+                : new MessageControl() { Message = msg };
 
-            if (bAutoscroll)
-                _ctlMessagesScrollViewer.ScrollToEnd();
+            _ctlMessagesStack.Children.Insert(nIndex, ctlMessage);
+
+            if (msg.IndexInChannel == 0)
+                _bReachedMessageZero = true;
+
+            if (_bInitialLoadComplete) {
+                _fScrollDownAmount += ctlMessage.Height;
+                _tmrScrollDown.IsEnabled = true;
+            }
         }
 
         private void RemoveControlForMessage(IMessage msg)
@@ -185,11 +201,49 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
         private void OnMessagePosted(IMessage msg) => Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
             AddControlForMessage(msg);
+            _tmrScrollToEnd.Start();
         });
 
         private void OnMessageDeleted(IMessage msgRemoved, IMessage msgTombstone) => Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
             RemoveControlForMessage(msgRemoved);
             AddControlForMessage(msgTombstone);
         });
+
+        // so far i haven't been able to find an event that fires _after_ the scrollviewer determines the size of its content
+        // (it doesn't do this immediately after things are added, or even by the time Initialized fires)
+        // this timer method is bad, but so is everything about the scrollviewer control
+        private void MessagesScrollViewer_Initialized(object objSender, EventArgs e) { }
+
+        private void ScrollToEndTimer_Tick(object objSender, EventArgs e) {
+            _tmrScrollToEnd.Stop();
+            _ctlMessagesScrollViewer.ScrollToEnd();
+
+            // don't set initial load complete until we've scrolled to the end
+            // otherwise ScrollChanged will try to load more old messages
+            if (!_bInitialLoadComplete)
+                _bInitialLoadComplete = true;
+        }
+
+        private void MessagesScrollViewer_ScrollChanged(object objSender, ScrollChangedEventArgs e) {
+            if (_ctlMessagesScrollViewer.Offset.Y == 0.0) {
+                if (_bInitialLoadComplete && !_bReachedMessageZero && !_wkrDownloadMessages.IsBusy) {
+                    _wkrDownloadMessages.RunWorkerAsync(new MessagesDownloadParams() { 
+                        Count = 10, 
+                        StartingOffset = _ctlMessagesStack.Children.Count 
+                    });
+                }
+            }
+        }
+
+        private void ScrollDownTimer_Tick(object objSender, EventArgs e) {
+            _tmrScrollDown.Stop();
+
+            // this line has been disabled because it causes a stack overflow
+            // the stack overflow is entirely composed of frames inside Avalonia DLLs
+            // it's almost certainly a bug in Avalonia
+            //_ctlMessagesScrollViewer.Offset += new Vector(0, _fScrollDownAmount);
+
+            _fScrollDownAmount = 0.0;
+        }
     }
 }
