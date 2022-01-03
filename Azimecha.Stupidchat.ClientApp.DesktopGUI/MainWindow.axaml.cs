@@ -38,9 +38,11 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
             _ctlServersStack = this.FindControl<StackPanel>("ServersStack");
             _ctlServerBorder = this.FindControl<Border>("ServerBorder");
-            _ctlServer = new ServerControl();
             _ctlMenuButton = this.FindControl<Button>("MenuButton");
             _ctlSubtitleText = this.FindControl<TextBlock>("SubtitleText");
+
+            _ctlServer = new ServerControl();
+            _ctlServer.Disconnected += ServerControl_Disconnected;
 
             Settings.Instance.ProfileChanged += Settings_ProfileChanged;
         }
@@ -213,13 +215,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
             if (e.Result is IServer server) {
                 FinishAddingServer(server);
-
-                Settings.Instance.Servers.Add(new KnownServer() {
-                    Address = server.Address,
-                    Port = server.Port,
-                    PublicKey = server.ID.ToArray()
-                });
-
+                Settings.Instance.Servers.Add(server.ToKnownServer());
                 Settings.Instance.Save();
             }
         }
@@ -227,6 +223,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private void FinishAddingServer(IServer server) {
             _ctlServersStack.Children.Add(new Button() { Content = server.Info.Name, Tag = server });
             _ctlServer.Server = server;
+            _ctlServer.Tag = server.ToKnownServer();
             _ctlServerBorder.Child = _ctlServer;
         }
 
@@ -255,6 +252,14 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             Settings.Discard();
             SecureSettings.Discard();
             Environment.Exit(0);
+        }
+
+        private void ServerControl_Disconnected(ServerControl ctlServer) {
+            _ctlServerBorder.Child = new TextBlock() {
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Text = "Disconnected"
+            };
         }
     }
 }

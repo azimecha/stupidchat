@@ -42,5 +42,11 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
             return null;
         }
+
+        public static KnownServer ToKnownServer(this IServer server) => new KnownServer() {
+            Address = server.Address,
+            Port = server.Port,
+            PublicKey = server.ID.ToArray()
+        };
     }
 }

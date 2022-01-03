@@ -29,5 +29,8 @@ namespace Azimecha.Stupidchat.Client {
 
         event Action<IChannel> ChannelAdded;
         event Action<IChannel> ChannelRemoved;
+
+        event Action<IServer, Exception> ErrorOccurred;
+        event Action<IServer> Disconnected;
     }
 }

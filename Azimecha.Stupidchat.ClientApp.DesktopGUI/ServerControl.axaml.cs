@@ -22,6 +22,8 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private Popup _ctlMemberPopup;
         private ProfileControl _ctlMemberProfile;
 
+        private Action<IServer, Exception> _procOnError;
+        private Action<IServer> _procOnDisposed;
         private Action<IMember> _procOnMemberAdded, _procOnMemberChanged, _procOnMemberRemoved;
         private Action<IChannel> _procOnChannelAdded, _procOnChannelModified, _procOnChannelRemoved;
 
@@ -37,6 +39,9 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
             _ctlMemberProfile = new ProfileControl();
             _ctlMemberPopup.Child = _ctlMemberProfile;
+
+            _procOnError = new Action<IServer, Exception>(OnServerErrored);
+            _procOnDisposed = new Action<IServer>(OnServerDisposed);
 
             _procOnMemberAdded = new Action<IMember>(OnMemberAdded);
             _procOnMemberChanged = new Action<IMember>(OnMemberChanged);
@@ -62,6 +67,8 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             get => _channel;
             set => SetAndRaise(ChannelProperty, ref _channel, value);
         }
+
+        public event Action<ServerControl> Disconnected;
 
         protected override void OnPropertyChanged<T>(AvaloniaPropertyChangedEventArgs<T> change) {
             if ((change.Property == ServerProperty) && change.IsEffectiveValueChange)
@@ -163,8 +170,19 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         });
 
         private void OnChannelRemoved(IChannel chan) => Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
-            _ctlChannelsStack.Children.RemoveAll(_ctlMembersStack.Children.OfType<Button>().Where(ctl => ReferenceEquals(ctl.Tag, chan)).ToArray());
+            _ctlChannelsStack.Children.RemoveAll(_ctlMembersStack.Children.OfType<Button>()
+                .Where(ctl => (ctl.Tag is IChannel chanCur) && chanCur.Info.ID == chan.Info.ID).ToArray());
             chan.InfoChanged -= _procOnChannelModified;
+        });
+
+        private void OnServerErrored(IServer server, Exception ex) => Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
+            MessageDialog.ShowMessage(this.GetWindow(), "Connection Error", $"Error in connection to {server.Info.Name}:\n"
+                + $"{ex.Message} ({ex.GetType().FullName})");
+        });
+
+        private void OnServerDisposed(IServer server) => Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
+            Server = null;
+            Disconnected?.Invoke(this);
         });
     }
 }

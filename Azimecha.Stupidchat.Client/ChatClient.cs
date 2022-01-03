@@ -233,6 +233,7 @@ namespace Azimecha.Stupidchat.Client {
 
             void ProtocolConnection.IErrorProcessor.ProcessError(Exception ex) {
                 Debug.WriteLine($"Error on connection to {Address}:{Port}: \n{ex}");
+                ErrorOccurred?.Invoke(this, ex);
             }
 
             private static readonly IDictionary<Type, System.Reflection.MethodInfo> _dicNotifProcessorMethods
@@ -385,6 +386,7 @@ namespace Azimecha.Stupidchat.Client {
 
             void IDisposalObserver<ProtocolConnection>.OnObjectDisposed(ProtocolConnection obj) {
                 _cclient?.OnDisconnected(this);
+                Disconnected?.Invoke(this);
                 Dispose();
             }
 
@@ -399,6 +401,9 @@ namespace Azimecha.Stupidchat.Client {
 
             public event Action<IChannel> ChannelAdded;
             public event Action<IChannel> ChannelRemoved;
+
+            public event Action<IServer, Exception> ErrorOccurred;
+            public event Action<IServer> Disconnected;
         }
 
         private class Member : IMember {
@@ -619,7 +624,6 @@ namespace Azimecha.Stupidchat.Client {
 
             public IMessage GetMessage(long nIndex)
                 => TryGetMessage(nIndex, true);
-
 
             public event Action<IMessage> MessagePosted;
             public event Action<IMessage, IMessage> MessageDeleted;

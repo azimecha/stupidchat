@@ -14,6 +14,7 @@
 		<!-- Content clipping border -->
         <Border CornerRadius="8" ClipToBounds="True" Background="#222222">
             <StackPanel>
+				<!-- User information area -->
                 <Border Background="#111111">
                     <Grid Margin="16">
                         <Grid.RowDefinitions>
@@ -48,6 +49,7 @@
                     </Grid>
                 </Border>
 
+				<!-- Memberships area -->
                 <ItemsControl Items="{Binding Memberships, RelativeSource = 
                                      {RelativeSource FindAncestor, 
                                      AncestorType = UserControl}, Mode = OneWay}"
