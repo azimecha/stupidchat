@@ -211,9 +211,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             if (e.Error is Exception ex) {
                 Debug.WriteLine($"[{nameof(MainWindow)}] Error connecting to \"{_strNewConnectionURL}\":\n{ex}");
                 MessageDialog.ShowMessage(this, "Connection Error", $"Error connecting to {_strNewConnectionURL}:\n{ex.Message} ({ex.GetType().FullName})");
-            }
-
-            if (e.Result is IServer server) {
+            } else if (e.Result is IServer server) {
                 FinishAddingServer(server);
                 Settings.Instance.Servers.Add(server.ToKnownServer());
                 Settings.Instance.Save();
@@ -236,7 +234,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         }
 
         private void Settings_ProfileChanged(Core.Structures.UserProfile profile) {
-            if (!(_client is null))
+            if (_client is not null)
                 _client.MyProfile = profile;
         }
 

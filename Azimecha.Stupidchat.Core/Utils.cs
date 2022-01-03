@@ -77,8 +77,12 @@ namespace Azimecha.Stupidchat.Core {
                         task.Wait(nTimeout, ct.Value);
                     else
                         task.Wait(ct.Value);
-                } else
-                    task.Wait();
+                } else {
+                    if (nTimeout >= 0)
+                        task.Wait(nTimeout);
+                    else
+                        task.Wait();
+                }
             } catch (Exception ex) {
                 while ((ex is AggregateException exAggregate) && (exAggregate.InnerExceptions.Count == 1))
                     ex = exAggregate.InnerExceptions[0];
@@ -221,5 +225,14 @@ namespace Azimecha.Stupidchat.Core {
             //Or the two combined, but a bit slower:
             return nHexVal - (nHexVal < 58 ? 48 : (nHexVal < 97 ? 55 : 87));
         }
+
+        // note that this could take forever if something is adding items extremely fast
+        public static void Clear<T>(this System.Collections.Concurrent.BlockingCollection<T> coll) {
+            T temp;
+            while (coll.TryTake(out temp)) ;
+        }
+
+        public static WeakReference<T> Weaken<T>(this T obj) where T : class
+            => new WeakReference<T>(obj);
     }
 }

@@ -1,8 +1,10 @@
 ﻿using Azimecha.Stupidchat.Core.Networking;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,10 +18,12 @@ namespace Azimecha.Stupidchat.Core {
         private WeakReference<IDisposalObserver<ProtocolConnection>> _cbDisposed;
         private CancellationTokenSource _ctsDisposed;
         private IDictionary<long, TaskCompletionSource<Protocol.ResponseMessage>> _dicOutstandingRequests;
-        private Thread _thdReceive;
+        private Thread _thdReceive, _thdRequestProcessing, _thdNotifProcessing;
         private long _nRequestID;
         private bool _bStarted;
         private object _objStartMutex;
+        private BlockingCollection<Protocol.RequestMessage> _collRequests;
+        private BlockingCollection<Protocol.NotificationMessage> _collNotifs;
 
         public ProtocolConnection(TcpClient client, bool bDisposeTCPClient, ReadOnlySpan<byte> spanPrivateKey) {
             _conn = new NetworkConnection(client, bDisposeTCPClient, spanPrivateKey);
@@ -29,8 +33,17 @@ namespace Azimecha.Stupidchat.Core {
             _ctsDisposed = new CancellationTokenSource();
             _objStartMutex = new object();
 
+            _collRequests = new BlockingCollection<Protocol.RequestMessage>();
+            _collNotifs = new BlockingCollection<Protocol.NotificationMessage>();
+
             _thdReceive = new Thread(ReceiveThreadProc);
             _thdReceive.Name = "Receive Thread";
+
+            _thdRequestProcessing = new Thread(RequestProcessingThreadProc);
+            _thdRequestProcessing.Name = "Request Thread";
+
+            _thdNotifProcessing = new Thread(NotificationProcessingThreadProc);
+            _thdNotifProcessing.Name = "Notification Thread";
         }
 
         public void Start() {
@@ -39,7 +52,7 @@ namespace Azimecha.Stupidchat.Core {
                     throw new InvalidOperationException("Connection has already been started");
 
                 _conn.Initialize();
-                _thdReceive.Start(new WeakReference<ProtocolConnection>(this));
+                _thdReceive.Start(this.Weaken());
 
                 _bStarted = true;
             }
@@ -66,7 +79,7 @@ namespace Azimecha.Stupidchat.Core {
 
         public Protocol.ResponseMessage PerformRequest(Protocol.RequestMessage msgRequest) {
             Task<Protocol.ResponseMessage> taskResp = IssueRequest(msgRequest);
-            taskResp.WaitAndDisaggregate();
+            taskResp.WaitAndDisaggregate(nTimeout: 10000);
             return taskResp.Result;
         }
 
@@ -102,12 +115,22 @@ namespace Azimecha.Stupidchat.Core {
 
         public IRequestProcessor RequestProcessor {
             get => _cbRequest?.GetValue();
-            set => _cbRequest = new WeakReference<IRequestProcessor>(value);
+            set {
+                _cbRequest = new WeakReference<IRequestProcessor>(value);
+                if (!(_cbRequest is null) && !_thdRequestProcessing.IsAlive)
+                    _thdRequestProcessing.Start(this.Weaken());
+                _collRequests.Clear();
+            }
         }
 
         public INotificationProcessor NotificationProcessor {
             get => _cbNotif?.GetValue();
-            set => _cbNotif = new WeakReference<INotificationProcessor>(value);
+            set { 
+                _cbNotif = new WeakReference<INotificationProcessor>(value);
+                if (!(_cbNotif is null) && !_thdNotifProcessing.IsAlive)
+                    _thdNotifProcessing.Start(this.Weaken());
+                _collRequests.Clear();
+            }
         }
 
         public IErrorProcessor ErrorProcessor {
@@ -134,7 +157,7 @@ namespace Azimecha.Stupidchat.Core {
                                 throw new OperationCanceledException();
 
                             Protocol.MessageContainer mc = ProtocolMessageSerializer.Deserialize(Encoding.UTF8.GetString(arrMessage));
-                            conn.GetValue()?.ProcessMessage(mc.Message);
+                            conn.GetValue()?.AcceptMessage(mc.Message);
 
                         } catch (System.IO.IOException exIO) {
                             if (exIO.InnerException is SocketException)
@@ -172,15 +195,26 @@ namespace Azimecha.Stupidchat.Core {
             }
         }
 
-        private void ProcessMessage(Protocol.IMessage msg) {
+        private void AcceptMessage(Protocol.IMessage msg) {
             if (msg is Protocol.RequestMessage)
-                ProcessRequest((Protocol.RequestMessage)msg);
+                AcceptRequest((Protocol.RequestMessage)msg);
             else if (msg is Protocol.ResponseMessage)
                 ProcessResponse((Protocol.ResponseMessage)msg);
             else if (msg is Protocol.NotificationMessage)
-                ProcessNotification((Protocol.NotificationMessage)msg);
+                AcceptNotification((Protocol.NotificationMessage)msg);
             else
                 throw new ProtocolMessageFormatException($"Message type {msg.GetType().FullName} is not understood by {nameof(ProtocolConnection)}");
+        }
+
+        private void AcceptRequest(Protocol.RequestMessage msgRequest) {
+            if (RequestProcessor is null)
+                throw new NoHandlerException("Request could not be processed because there is no request processor");
+            _collRequests.Add(msgRequest);
+        }
+
+        private void AcceptNotification(Protocol.NotificationMessage msgNotif) {
+            if (!(NotificationProcessor is null))
+                _collNotifs.Add(msgNotif);
         }
 
         private void ProcessRequest(Protocol.RequestMessage msgRequest) {
@@ -244,6 +278,49 @@ namespace Azimecha.Stupidchat.Core {
 
         void IDisposalObserver<NetworkConnection>.OnObjectDisposed(NetworkConnection obj) {
             Dispose();
+        }
+
+        private static void RequestProcessingThreadProc(object objWeakConnection)
+            => DoProcessingLoop<Protocol.RequestMessage>((WeakReference<ProtocolConnection>)objWeakConnection, nameof(_collRequests), nameof(ProcessRequest));
+
+        private static void NotificationProcessingThreadProc(object objWeakConnection)
+            => DoProcessingLoop<Protocol.NotificationMessage>((WeakReference<ProtocolConnection>)objWeakConnection, nameof(_collNotifs), nameof(ProcessNotification));
+
+        private static void DoProcessingLoop<T>(WeakReference<ProtocolConnection> conn, string strCollectionVar, string strProcessorFunction) {
+            BlockingCollection<T> coll;
+            CancellationToken tokCancel;
+
+            try {
+                FieldInfo infCollField = typeof(ProtocolConnection).GetField(strCollectionVar, BindingFlags.Instance | BindingFlags.NonPublic
+                    | BindingFlags.Public | BindingFlags.FlattenHierarchy);
+                if (infCollField is null)
+                    throw new KeyNotFoundException($"Collection field {strCollectionVar} not found");
+
+                MethodInfo infProcessorMethod = typeof(ProtocolConnection).GetMethod(strProcessorFunction, BindingFlags.Instance | BindingFlags.NonPublic
+                    | BindingFlags.Public | BindingFlags.FlattenHierarchy);
+                if (infProcessorMethod is null)
+                    throw new KeyNotFoundException($"Processor method {strProcessorFunction} not found");
+
+                do {
+                    ProtocolConnection connStrong;
+                    if (!conn.TryGetTarget(out connStrong)) return;
+                    tokCancel = connStrong._ctsDisposed.Token;
+                    coll = (BlockingCollection<T>)infCollField.GetValue(connStrong);
+                    connStrong = null;
+                } while (false);
+
+                T msg;
+                while (coll.TryTake(out msg, int.MaxValue, tokCancel)) {
+                    if (conn.TryGetTarget(out ProtocolConnection connStrong)) {
+                        infProcessorMethod.Invoke(connStrong, new object[] { msg });
+                        connStrong = null;
+                    }
+                }
+
+            } catch (Exception ex) {
+                Debug.WriteLine($"[{nameof(ProtocolConnection)}/{nameof(DoProcessingLoop)}<{typeof(T).FullName}>] {ex}");
+                conn.GetValue()?.Dispose();
+            }
         }
     }
 }
