@@ -54,7 +54,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         // init phase 1
         private void MainWindow_Opened(object sender, EventArgs e) {
             byte[] arrPrivateKey = SecureSettings.GetPrivateKey();
-            if (arrPrivateKey is null)
+            if ((arrPrivateKey is null) || (Settings.Instance.Username is null))
                 new UsernamePasswordDialog() { 
                     PromptText = "Enter your Stupidchat username and password.\n\n"
                         + "If you don't already have an account, come up with a username you like and choose a strong password.",

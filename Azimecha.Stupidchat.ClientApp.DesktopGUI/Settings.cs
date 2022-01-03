@@ -19,7 +19,10 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         [Newtonsoft.Json.JsonIgnore]
         public string Username {
             get => Profile.Username;
-            set => ModifyProfile((ref Core.Structures.UserProfile p) => p.Username = value);
+            set {
+                if (value is null) throw new ArgumentNullException(nameof(value));
+                ModifyProfile((ref Core.Structures.UserProfile p) => p.Username = value);
+            }
         }
 
         [Newtonsoft.Json.JsonIgnore]

@@ -157,10 +157,16 @@ namespace Azimecha.Stupidchat.Client {
                 System.Net.Sockets.TcpClient client = new System.Net.Sockets.TcpClient();
                 client.Connect(strAddress, nPort);
 
+                _dicMembers = new Dictionary<string, Member>();
+                _dicChannels = new Dictionary<long, Channel>();
+                _objInfoMutex = new object();
+
+                _dicNotifProcessors = ProcessorAttribute.BindProcessorsList<Server, Core.Protocol.NotificationMessage>
+                    (this, _dicNotifProcessorMethods);
+
                 try {
                     _conn = new ProtocolConnection(client, true, spanPrivateKey);
                     _conn.ErrorProcessor = this;
-                    _conn.NotificationProcessor = this;
                     _conn.DisposalObserver = this;
                     _conn.Start();
                 } catch (Exception) {
@@ -168,27 +174,22 @@ namespace Azimecha.Stupidchat.Client {
                     throw;
                 }
 
+                _tfIcon = new Lazy<TemporaryFile>(DownloadIcon, LazyThreadSafetyMode.ExecutionAndPublication);
+
                 _arrServerPublicKey = _conn.PartnerPublicKey.ToArray();
-
                 _info = _conn.PerformRequest<ServerInfoResponse>(new ServerInfoRequest()).Info;
-                _objInfoMutex = new object();
-
-                _dicMembers = new Dictionary<string, Member>();
-                foreach (MemberInfo infoMember in _conn.PerformRequest<MembersResponse>(new MembersRequest()).Members)
-                    _dicMembers.Add(IDToString(infoMember.PublicKey), new Member(this, infoMember));
-
-                _dicChannels = new Dictionary<long, Channel>();
-                foreach (ChannelInfo infoChannel in _conn.PerformRequest<ChannelsResponse>(new ChannelsRequest()).Channels)
-                    _dicChannels.Add(infoChannel.ID, new Channel(this, infoChannel));
-
-                _dicNotifProcessors = ProcessorAttribute.BindProcessorsList<Server, Core.Protocol.NotificationMessage>
-                    (this, _dicNotifProcessorMethods);
 
                 SignedStructSerializer.SignedData dataProfile = SignedStructSerializer.Serialize(_cclient._profileMe,
                     _cclient._arrPublicKey, _cclient._arrPrivateKey);
                 _conn.PerformRequest(new UpdateProfileRequest() { SignedData = dataProfile.Data, Signature = dataProfile.Signature });
 
-                _tfIcon = new Lazy<TemporaryFile>(DownloadIcon, LazyThreadSafetyMode.ExecutionAndPublication);
+                foreach (MemberInfo infoMember in _conn.PerformRequest<MembersResponse>(new MembersRequest()).Members)
+                    _dicMembers.Add(IDToString(infoMember.PublicKey), new Member(this, infoMember));
+
+                foreach (ChannelInfo infoChannel in _conn.PerformRequest<ChannelsResponse>(new ChannelsRequest()).Channels)
+                    _dicChannels.Add(infoChannel.ID, new Channel(this, infoChannel));
+
+                _conn.NotificationProcessor = this;
             }
 
             public string Address { get; private set; }
