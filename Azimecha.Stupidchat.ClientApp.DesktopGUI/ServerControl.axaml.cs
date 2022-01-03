@@ -172,7 +172,11 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private void OnChannelRemoved(IChannel chan) => Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
             _ctlChannelsStack.Children.RemoveAll(_ctlChannelsStack.Children.OfType<Button>()
                 .Where(ctl => (ctl.Tag is IChannel chanCur) && chanCur.Info.ID == chan.Info.ID).ToArray());
+
             chan.InfoChanged -= _procOnChannelModified;
+
+            if (chan.Info.ID == _channel.Info.ID)
+                Channel = null;
         });
 
         private void OnServerErrored(IServer server, Exception ex) => Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
