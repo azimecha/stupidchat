@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="440"
+             x:Class="Azimecha.Stupidchat.ClientApp.DesktopGUI.VoiceChannelControl">
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<WrapPanel x:Name="ParticipantsPanel" Grid.Row="0" Orientation="Horizontal"/>
+		<GridSplitter Grid.Row="0" HorizontalAlignment="Stretch" Height="4"
+					  ZIndex="1"/>
+
+		<Grid Grid.Row="1">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="40"/>
+				<RowDefinition Height="4"/>
+			</Grid.RowDefinitions>
+
+			<ScrollViewer x:Name="MessagesScrollViewer">
+				<StackPanel x:Name="MessagesStack" Grid.Row="0"
+							Margin="16" Spacing="16"/>
+			</ScrollViewer>
+
+			<DockPanel Grid.Row="1" Margin="8">
+				<Button Grid.Column="1" Content="Send" Margin="0,-16,0,-16"
+						DockPanel.Dock="Right" HorizontalAlignment="Right"
+						IsEnabled="{Binding SendButtonAvailable, RelativeSource = 
+		 						   {RelativeSource FindAncestor, AncestorType=UserControl}}"
+						Click="SendButton_Click"/>
+				<TextBox Grid.Column="0" BorderThickness="0" Background="#333333"
+						 Margin="0,2,4,2" 
+						 Text="{Binding SendBoxText, RelativeSource = 
+		 		               {RelativeSource FindAncestor, AncestorType=UserControl}}"
+						 KeyDown="SendBox_KeyDown" Watermark="Type a message..."/>
+			</DockPanel>
+		</Grid>
+	</Grid>
+</UserControl>

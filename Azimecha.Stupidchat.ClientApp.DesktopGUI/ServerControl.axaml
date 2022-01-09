@@ -54,9 +54,9 @@
                 </StackPanel>
             </ScrollViewer>
         </Border>
-		
-		<Popup x:Name="MemberPopup" IsOpen="False" StaysOpen="False"
-			   PlacementMode="Bottom"/>
+        
+        <Popup x:Name="MemberPopup" IsOpen="False" StaysOpen="False"
+               PlacementMode="Bottom"/>
     </Grid>
     
 </UserControl>

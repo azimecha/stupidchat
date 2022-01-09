@@ -164,6 +164,7 @@ namespace Azimecha.Stupidchat.ClientApp.StinkyWindowsGUI {
                     return;
                 }
 
+                _strNewServerAddress = strAddress;
                 NewConnectionWorker.RunWorkerAsync(endpoint);
                 ServerConnectButton.Text = $"Connecting to {strAddress}";
                 ServerConnectButton.Enabled = false;

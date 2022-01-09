@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Azimecha.Stupidchat.Client;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -59,8 +60,8 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
         private void OnUserChanged() {
             _ctlAvatar.User = User;
-            Username = User.Profile.Username;
-            Memberships = User.Memberships.Select(memb => new Membership(memb)).ToArray();
+            Username = (User is null) ? "" : User.Profile.Username;
+            Memberships = (User is null) ? Array.Empty<Membership>() : User.Memberships.Select(memb => new Membership(memb)).ToArray();
         }
 
         public class Membership {

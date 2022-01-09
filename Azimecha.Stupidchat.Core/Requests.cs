@@ -78,4 +78,46 @@ namespace Azimecha.Stupidchat.Core.Requests {
     public class SetNicknameRequest : Protocol.RequestMessage {
         [DataMember] public string Nickname;
     }
+
+    [DataContract]
+    public class VCParticipantsRequest : Protocol.RequestMessage {
+        [DataMember] public long ChannelID;
+    }
+
+    [DataContract]
+    public class VCParticipantsResponse : Protocol.ResponseMessage {
+        [DataMember] public long ChannelID;
+        [DataMember] public VCParticpant[] Participants;
+    }
+
+    [DataContract]
+    public class VCJoinRequest : Protocol.RequestMessage {
+        [DataMember] public long ChannelID;
+    }
+
+    [DataContract]
+    public class VCTransmitRequest : Protocol.RequestMessage {
+        [DataMember] public long ChannelID;
+        [DataMember] public VCSubchannelMask StartTransmitOn;
+        [DataMember] public VCSubchannelMask StopTransmitOn;
+    }
+
+    [DataContract]
+    public class VCReceiveRequest : Protocol.RequestMessage {
+        [DataMember] public long ChannelID;
+        [DataMember] public VCSubchannelMask StartReceiveOn;
+        [DataMember] public VCSubchannelMask StopReceiveOn;
+    }
+
+    [DataContract]
+    public class VCSendDataRequest : Protocol.RequestMessage {
+        [DataMember] public long ChannelID;
+        [DataMember] public VCSubchannelMask Subchannel;
+        [DataMember] public byte[] Data;
+    }
+
+    [DataContract]
+    public class VCLeaveRequest : Protocol.RequestMessage {
+        [DataMember] public long ChannelID;
+    }
 }

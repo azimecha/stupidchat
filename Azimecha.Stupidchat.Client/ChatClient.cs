@@ -187,7 +187,7 @@ namespace Azimecha.Stupidchat.Client {
                     _dicMembers.Add(IDToString(infoMember.PublicKey), new Member(this, infoMember));
 
                 foreach (ChannelInfo infoChannel in _conn.PerformRequest<ChannelsResponse>(new ChannelsRequest()).Channels)
-                    _dicChannels.Add(infoChannel.ID, new Channel(this, infoChannel));
+                    _dicChannels.Add(infoChannel.ID, Channel.Create(this, infoChannel));
 
                 _conn.NotificationProcessor = this;
             }
@@ -290,7 +290,7 @@ namespace Azimecha.Stupidchat.Client {
 
             [Processor(typeof(Core.Notifications.ChannelAddedNotification))]
             private void OnChannelAdded(Core.Notifications.ChannelAddedNotification notif) {
-                Channel chanNew = new Channel(this, notif.Channel);
+                Channel chanNew = Channel.Create(this, notif.Channel);
 
                 lock (_dicChannels)
                     _dicChannels.Add(notif.Channel.ID, chanNew);
@@ -347,6 +347,34 @@ namespace Azimecha.Stupidchat.Client {
 
                 _cclient.MessageDeleted?.Invoke(msg);
             }
+
+            [Processor(typeof(Core.Notifications.VCParticipantEnteredNotification))]
+            private void OnVCParticipantEntered(Core.Notifications.VCParticipantEnteredNotification notif)
+                => ((VoiceChannel)FindChannel(notif.ChannelID)).OnParticipantEntered(FindMember(notif.ParticipantPublicKey));
+
+            [Processor(typeof(Core.Notifications.VCParticipantExitedNotification))]
+            private void OnVCParticipantExited(Core.Notifications.VCParticipantExitedNotification notif)
+                => ((VoiceChannel)FindChannel(notif.ChannelID)).OnParticipantExited(FindMember(notif.ParticipantPublicKey));
+
+            [Processor(typeof(Core.Notifications.VCTransmitStartedNotification))]
+            private void OnVCTransmitStarted(Core.Notifications.VCTransmitStartedNotification notif)
+                => ((VoiceChannel)FindChannel(notif.ChannelID)).OnTransmitStarted(FindMember(notif.ParticipantPublicKey), notif.Subchannels);
+
+            [Processor(typeof(Core.Notifications.VCTransmitStoppedNotification))]
+            private void OnVCTransmitStopped(Core.Notifications.VCTransmitStoppedNotification notif)
+                => ((VoiceChannel)FindChannel(notif.ChannelID)).OnTransmitStopped(FindMember(notif.ParticipantPublicKey), notif.Subchannels);
+
+            [Processor(typeof(Core.Notifications.VCReceiveStartedNotification))]
+            private void OnVCReceiveStarted(Core.Notifications.VCReceiveStartedNotification notif)
+                => ((VoiceChannel)FindChannel(notif.ChannelID)).OnReceiveStarted(FindMember(notif.ParticipantPublicKey), notif.Subchannels);
+
+            [Processor(typeof(Core.Notifications.VCReceiveStoppedNotification))]
+            private void OnVCReceiveStopped(Core.Notifications.VCReceiveStoppedNotification notif)
+                => ((VoiceChannel)FindChannel(notif.ChannelID)).OnReceiveStopped(FindMember(notif.ParticipantPublicKey), notif.Subchannels);
+
+            [Processor(typeof(Core.Notifications.VCDataBlockNotification))]
+            private void OnVCDataBlock(Core.Notifications.VCDataBlockNotification notif)
+                => ((VoiceChannel)FindChannel(notif.ChannelID)).OnDataReceived(FindMember(notif.SenderPublicKey), notif.Subchannel, notif.Data);
 
             public IChannel FindChannel(long nChannelID) {
                 IChannel chan = TryFindChannel(nChannelID);
@@ -461,7 +489,10 @@ namespace Azimecha.Stupidchat.Client {
             private ConcurrentDictionary<long, IMessage> _dicMessages;
             private long _nHighestMessageIndex;
 
-            internal Channel(Server server, ChannelInfo info) {
+            public static Channel Create(Server server, ChannelInfo info)
+                => (info.Type == ChannelType.Voice) ? new VoiceChannel(server, info) : new Channel(server, info);
+
+            protected Channel(Server server, ChannelInfo info) {
                 _server = server;
                 _info = info;
                 _objChannelMutex = new object();
@@ -631,6 +662,112 @@ namespace Azimecha.Stupidchat.Client {
             public event Action<IChannel> InfoChanged;
         }
 
+        private class VoiceChannel : Channel, IVoiceChannel {
+            private object _objTransmitOnMutex = new object();
+            private object _objRecvOnMutex = new object();
+            private object _objJoinLeaveMutex = new object();
+            private VCSubchannelMask _maskTransmit, _maskRecv;
+            private bool _bInChannel;
+            
+            internal VoiceChannel(Server server, ChannelInfo info) : base(server, info) { }
+
+            public VCSubchannelMask TransmittingOn => _maskTransmit;
+            public VCSubchannelMask ReceivingOn => _maskRecv;
+            public bool InChannel => _bInChannel;
+
+            public IEnumerable<VoiceParticipantInfo> Participants
+                => ((ChatClient.Server)Server).Connection.PerformRequest<VCParticipantsResponse>(new VCParticipantsRequest() { ChannelID = Info.ID })
+                    .Participants.Select(p => GetParticipant(p));
+
+            public event Action<IMember> ParticipantEntered;
+            public event Action<IMember> ParticipantLeft;
+            public event Action<IMember, VCSubchannelMask> ParticipantStartedTransmitting;
+            public event Action<IMember, VCSubchannelMask> ParticipantStoppedTransmitting;
+            public event Action<IMember, VCSubchannelMask> ParticipantStartedReceiving;
+            public event Action<IMember, VCSubchannelMask> ParticipantStoppedReceiving;
+            public event Action<IMember, VCSubchannelMask, Memory<byte>> ParticipantSentData;
+
+            public void Join() {
+                ((ChatClient.Server)Server).Connection.PerformRequest<GenericSuccessResponse>(new VCJoinRequest() { ChannelID = Info.ID });
+                _bInChannel = true;
+            }
+
+            public void Leave() {
+                ((ChatClient.Server)Server).Connection.PerformRequest<GenericSuccessResponse>(new VCLeaveRequest() { ChannelID = Info.ID });
+                _bInChannel = false;
+            }
+
+            public void SendData(VCSubchannelMask maskOn, ReadOnlySpan<byte> spanData)
+                => ((ChatClient.Server)Server).Connection.PerformRequest<GenericSuccessResponse>(new VCSendDataRequest() {
+                    ChannelID = Info.ID,
+                    Data = spanData.ToArray(),
+                    Subchannel = maskOn
+                });
+
+            public Task SendDataAsync(VCSubchannelMask maskOn, ReadOnlySpan<byte> spanData)
+                => ((ChatClient.Server)Server).Connection.IssueRequest(new VCSendDataRequest() {
+                    ChannelID = Info.ID,
+                    Data = spanData.ToArray(),
+                    Subchannel = maskOn
+                });
+
+            public void StartReceiving(VCSubchannelMask maskOn) {
+                ((ChatClient.Server)Server).Connection.PerformRequest<GenericSuccessResponse>(new VCReceiveRequest() {
+                    ChannelID = Info.ID,
+                    StartReceiveOn = maskOn
+                });
+
+                lock (_objRecvOnMutex)
+                    _maskRecv |= maskOn;
+            }
+
+            public void StartTransmitting(VCSubchannelMask maskOn) {
+                ((ChatClient.Server)Server).Connection.PerformRequest<GenericSuccessResponse>(new VCTransmitRequest() {
+                    ChannelID = Info.ID,
+                    StartTransmitOn = maskOn
+                });
+
+                lock (_objTransmitOnMutex)
+                    _maskTransmit |= maskOn;
+            }
+
+            public void StopReceiving(VCSubchannelMask maskOn) {
+                ((ChatClient.Server)Server).Connection.PerformRequest<GenericSuccessResponse>(new VCReceiveRequest() {
+                    ChannelID = Info.ID,
+                    StopReceiveOn = maskOn
+                });
+
+                lock (_objRecvOnMutex)
+                    _maskRecv &= ~maskOn;
+            }
+
+            public void StopTransmitting(VCSubchannelMask maskOn) {
+                ((ChatClient.Server)Server).Connection.PerformRequest<GenericSuccessResponse>(new VCTransmitRequest() {
+                    ChannelID = Info.ID,
+                    StopTransmitOn = maskOn
+                });
+
+                lock (_objTransmitOnMutex)
+                    _maskTransmit &= ~maskOn;
+            }
+
+            private VoiceParticipantInfo GetParticipant(VCParticpant p) => new VoiceParticipantInfo() {
+                Member = ((ChatClient.Server)Server).FindMember(p.PublicKey),
+                TransmittingOn = p.TransmittingOn,
+                ReceivingOn = p.ReceivingOn
+            };
+
+            internal void OnParticipantEntered(IMember memb) => ParticipantEntered?.Invoke(memb);
+            internal void OnParticipantExited(IMember memb) => ParticipantLeft?.Invoke(memb);
+            internal void OnTransmitStarted(IMember memb, VCSubchannelMask mask) => ParticipantStartedTransmitting?.Invoke(memb, mask);
+            internal void OnTransmitStopped(IMember memb, VCSubchannelMask mask) => ParticipantStoppedTransmitting?.Invoke(memb, mask);
+            internal void OnReceiveStarted(IMember memb, VCSubchannelMask mask) => ParticipantStartedReceiving?.Invoke(memb, mask);
+            internal void OnReceiveStopped(IMember memb, VCSubchannelMask mask) => ParticipantStoppedReceiving?.Invoke(memb, mask);
+
+            internal void OnDataReceived(IMember membSender, VCSubchannelMask mask, byte[] arrData) 
+                => ParticipantSentData?.Invoke(membSender, mask, arrData);
+        }
+
         private class User : IUser {
             private IList<Member> _lstMemberships;
             private byte[] _arrPublicKey;
@@ -777,7 +914,9 @@ namespace Azimecha.Stupidchat.Client {
             public DateTime SentAt => DateTime.MinValue;
             public long IndexInChannel => _nIndex;
 
+#pragma warning disable CS0067 // a deleted message will not be deleted again
             public event Action<IMessage> Deleted;
+#pragma warning restore CS0067
         }
     }
 }

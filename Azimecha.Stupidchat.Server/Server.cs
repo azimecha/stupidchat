@@ -24,6 +24,7 @@ namespace Azimecha.Stupidchat.Server {
         private string _strDatabasePath;
         private object _objInfoMutex;
         private bool _bStopRequested;
+        private ConcurrentDictionary<long, VoiceChannel> _dicVoiceChannels;
 
         public Server(ReadOnlySpan<byte> spanPrivateKey, IPEndPoint endpointListenOn, Core.Structures.ServerInfo info, string strDatabasePath) {
             _arrPrivateKey = spanPrivateKey.ToArray();
@@ -32,12 +33,18 @@ namespace Azimecha.Stupidchat.Server {
             _ctsDisposing = new CancellationTokenSource();
             _info = info;
             _objInfoMutex = new object();
+            _dicVoiceChannels = new ConcurrentDictionary<long, VoiceChannel>();
 
             //_dicRequestProcessors = ProcessorAttribute.BindProcessorsList<Server, RequestMessage, ResponseMessage>(this, _dicRequestProcessorMethods);
 
             _strDatabasePath = strDatabasePath;
             _tllConnections = new ThreadLocalLazy<SQLite.SQLiteConnection>(ConnectToDatabase);
             InitDatabase();
+
+            foreach (Records.ChannelRecord chanVoice in Database.Table<Records.ChannelRecord>().Where(chan => chan.Type == Core.Structures.ChannelType.Voice)) {
+                if (!_dicVoiceChannels.TryAdd(chanVoice.ID, new VoiceChannel(this, chanVoice.ID)))
+                    throw new Exception($"Error adding voice channel #{chanVoice.ID} ({chanVoice.Name})");
+            }
 
             _tcsServerStart = new TaskCompletionSource<int>();
             Task<int> taskServerStart = _tcsServerStart.Task;
@@ -99,6 +106,9 @@ namespace Azimecha.Stupidchat.Server {
             db.RunInTransaction(() => {
                 db.Insert(channel);
                 channel.ID = db.Table<Records.ChannelRecord>().OrderByDescending(chan => chan.ID).First().ID;
+
+                if (!_dicVoiceChannels.TryAdd(channel.ID, new VoiceChannel(this, channel.ID)))
+                    throw new Exception("Error adding channel to dictionary");
             });
 
             BroadcastNotification(new Core.Notifications.ChannelAddedNotification() { Channel = channel.ToChannelInfo() });
@@ -113,6 +123,10 @@ namespace Azimecha.Stupidchat.Server {
             SQLite.SQLiteConnection db = Database;
             db.RunInTransaction(() => {
                 channel = db.Table<Records.ChannelRecord>().Where(chan => chan.ID == infChannel.ID).First();
+
+                if (channel.Type != infChannel.Type)
+                    throw new InvalidOperationException("A channel's type cannot be changed");
+
                 channel.Description = infChannel.Description;
                 channel.Name = infChannel.Name;
                 db.Update(channel);
@@ -243,13 +257,15 @@ namespace Azimecha.Stupidchat.Server {
                 }
             });
 
+            conn.ClientMemberID = member.MemberID;
+
             if (bNewMember) {
                 MemberJoined?.Invoke(member);
                 BroadcastNotification(new Core.Notifications.MemberJoinedNotification() { Member = member.ToMemberInfo() });
             }
         }
 
-        private void BroadcastNotification(NotificationMessage msgNotification) {
+        internal void BroadcastNotification(NotificationMessage msgNotification) {
             ClientConnection[] arrConnections = _dicConnections.Values.ToArray();
 
             arrConnections.AsParallel().ForAll(conn => {
@@ -474,5 +490,35 @@ namespace Azimecha.Stupidchat.Server {
                 MessageIndex = message.MessageIndex
             };
         }
+
+        private VoiceChannel GetVoiceChannel(long nChannel) {
+            if (!_dicVoiceChannels.TryGetValue(nChannel, out VoiceChannel chan))
+                throw new KeyNotFoundException($"No voice channel with ID {nChannel}");
+            return chan;
+        }
+
+        [Processor(typeof(Core.Requests.VCParticipantsRequest))]
+        private Core.Requests.VCParticipantsResponse HandleVCParticipantsRequest(ClientConnection conn, Core.Requests.VCParticipantsRequest req)
+            => GetVoiceChannel(req.ChannelID).ProcessParticipantsRequest(conn, req);
+
+        [Processor(typeof(Core.Requests.VCJoinRequest))]
+        private Core.Requests.GenericSuccessResponse HandleVCJoinRequest(ClientConnection conn, Core.Requests.VCJoinRequest req)
+            => GetVoiceChannel(req.ChannelID).ProcessJoinRequest(conn, req);
+
+        [Processor(typeof(Core.Requests.VCTransmitRequest))]
+        private Core.Requests.GenericSuccessResponse HandleVCTransmitRequest(ClientConnection conn, Core.Requests.VCTransmitRequest req)
+            => GetVoiceChannel(req.ChannelID).ProcessTransmitRequest(conn, req);
+
+        [Processor(typeof(Core.Requests.VCReceiveRequest))]
+        private Core.Requests.GenericSuccessResponse HandleVCReceiveRequest(ClientConnection conn, Core.Requests.VCReceiveRequest req)
+            => GetVoiceChannel(req.ChannelID).ProcessReceiveRequest(conn, req);
+
+        [Processor(typeof(Core.Requests.VCSendDataRequest))]
+        private Core.Requests.GenericSuccessResponse HandleVCSendDataRequest(ClientConnection conn, Core.Requests.VCSendDataRequest req)
+            => GetVoiceChannel(req.ChannelID).ProcessSendDataRequest(conn, req);
+
+        [Processor(typeof(Core.Requests.VCLeaveRequest))]
+        private Core.Requests.GenericSuccessResponse HandleVCLeaveRequest(ClientConnection conn, Core.Requests.VCLeaveRequest req)
+            => GetVoiceChannel(req.ChannelID).ProcessLeaveRequest(conn, req);
     }
 }

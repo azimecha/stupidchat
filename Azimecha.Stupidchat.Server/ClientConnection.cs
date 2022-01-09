@@ -17,6 +17,7 @@ namespace Azimecha.Stupidchat.Server {
 
         public ClientConnection(Server server, TcpClient client) {
             _server = server;
+            ClientMemberID = -1;
 
             _conn = new Core.ProtocolConnection(client, true, server.PrivateKey);
             _conn.ErrorProcessor = this;
@@ -47,5 +48,7 @@ namespace Azimecha.Stupidchat.Server {
 
         ResponseMessage Core.ProtocolConnection.IRequestProcessor.ProcessRequest(RequestMessage msgRequest) 
             => _server.HandleRequest(this, msgRequest);
+
+        public long ClientMemberID { get; set; }
     }
 }

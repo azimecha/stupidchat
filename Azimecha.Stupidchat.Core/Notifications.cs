@@ -52,4 +52,52 @@ namespace Azimecha.Stupidchat.Core.Notifications {
         [DataMember] public long ChannelID;
         [DataMember] public long MessageIndex;
     }
+
+    [DataContract]
+    public class VCParticipantEnteredNotification : Protocol.NotificationMessage {
+        [DataMember] public long ChannelID;
+        [DataMember] public byte[] ParticipantPublicKey;
+    }
+
+    [DataContract]
+    public class VCParticipantExitedNotification : Protocol.NotificationMessage {
+        [DataMember] public long ChannelID;
+        [DataMember] public byte[] ParticipantPublicKey;
+    }
+
+    [DataContract]
+    public class VCTransmitStartedNotification : Protocol.NotificationMessage {
+        [DataMember] public long ChannelID;
+        [DataMember] public byte[] ParticipantPublicKey;
+        [DataMember] public VCSubchannelMask Subchannels;
+    }
+
+    [DataContract]
+    public class VCTransmitStoppedNotification : Protocol.NotificationMessage {
+        [DataMember] public long ChannelID;
+        [DataMember] public byte[] ParticipantPublicKey;
+        [DataMember] public VCSubchannelMask Subchannels;
+    }
+
+    [DataContract]
+    public class VCReceiveStartedNotification : Protocol.NotificationMessage {
+        [DataMember] public long ChannelID;
+        [DataMember] public byte[] ParticipantPublicKey;
+        [DataMember] public VCSubchannelMask Subchannels;
+    }
+
+    [DataContract]
+    public class VCReceiveStoppedNotification : Protocol.NotificationMessage {
+        [DataMember] public long ChannelID;
+        [DataMember] public byte[] ParticipantPublicKey;
+        [DataMember] public VCSubchannelMask Subchannels;
+    }
+
+    [DataContract]
+    public class VCDataBlockNotification : Protocol.NotificationMessage {
+        [DataMember] public long ChannelID;
+        [DataMember] public byte[] SenderPublicKey;
+        [DataMember] public VCSubchannelMask Subchannel;
+        [DataMember] public byte[] Data;
+    }
 }

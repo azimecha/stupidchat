@@ -13,7 +13,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         public static Settings Instance => _instance.Value;
 
         public Settings() {
-            Servers = new List<KnownServer>();
+            _data = new SettingsData() { Servers = new List<KnownServer>() };
         }
 
         [Newtonsoft.Json.JsonIgnore]
@@ -25,29 +25,33 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             }
         }
 
-        [Newtonsoft.Json.JsonIgnore]
         public string DisplayName {
             get => Profile.DisplayName;
             set => ModifyProfile((ref Core.Structures.UserProfile p) => p.DisplayName = value);
         }
 
-        [Newtonsoft.Json.JsonIgnore]
         public string Bio {
             get => Profile.Bio;
             set => ModifyProfile((ref Core.Structures.UserProfile p) => p.Bio = value);
         }
 
-        [Newtonsoft.Json.JsonIgnore]
         public string AvatarURL {
             get => Profile.AvatarURL;
             set => ModifyProfile((ref Core.Structures.UserProfile p) => p.AvatarURL = value);
         }
 
-        [Newtonsoft.Json.JsonIgnore]
         public DateTime ProfileUpdateTime => new DateTime(Profile.UpdateTime);
 
-        public Core.Structures.UserProfile Profile { get; private set; }
-        public List<KnownServer> Servers { get; private set; }
+        public Core.Structures.UserProfile Profile => _data.Profile;
+        public List<KnownServer> Servers => _data.Servers;
+
+        [DataContract]
+        private struct SettingsData {
+            [DataMember] public Core.Structures.UserProfile Profile;
+            [DataMember] public List<KnownServer> Servers;
+        }
+
+        private SettingsData _data;
 
         private delegate void ProfileModifierDelegate(ref Core.Structures.UserProfile prof);
 
@@ -55,26 +59,23 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             Core.Structures.UserProfile profCur = Profile;
             procModifyProfile(ref profCur);
             profCur.UpdateTime = DateTime.Now.Ticks;
-            Profile = profCur;
+            _data.Profile = profCur;
             ProfileChanged?.Invoke(profCur);
         }
 
         public void Save() {
-            System.IO.File.WriteAllText(_strFilePath, Newtonsoft.Json.JsonConvert.SerializeObject(this));
+            System.IO.File.WriteAllText(_strFilePath, Newtonsoft.Json.JsonConvert.SerializeObject(_data));
         }
 
         private static Settings LoadOrCreate() {
-            Settings instance = null;
+            Settings instance = new Settings();
 
             try {
                 if (System.IO.File.Exists(_strFilePath))
-                    instance = Newtonsoft.Json.JsonConvert.DeserializeObject<Settings>(System.IO.File.ReadAllText(_strFilePath));
+                    instance._data = Newtonsoft.Json.JsonConvert.DeserializeObject<SettingsData>(System.IO.File.ReadAllText(_strFilePath));
             } catch (Exception ex) {
                 Debug.WriteLine($"[{nameof(Settings)}/{nameof(LoadOrCreate)}] Error loading settings: {ex}");
             }
-            
-            if (instance is null)
-                instance = new Settings();
 
             instance.Save();
             return instance;

@@ -63,4 +63,23 @@ namespace Azimecha.Stupidchat.Core.Structures {
         [DataMember] public byte[] Profile; // UserProfile object
         [DataMember] public byte[] ProfileSignature;
     }
+
+    [Flags]
+    public enum VCSubchannelMask : ulong {
+        None = 0,
+        MicrophoneAudio = 1 << 0,
+        CameraVideo = 1 << 1,
+        DesktopAudio = 1 << 2,
+        DesktopVideo = 1 << 3,
+        MediaAudio = 1 << 4,
+        MediaVideo = 1 << 5,
+        NonpersistentText = 1 << 6
+    }
+
+    [DataContract]
+    public struct VCParticpant {
+        [DataMember] public byte[] PublicKey;
+        [DataMember] public VCSubchannelMask TransmittingOn;
+        [DataMember] public VCSubchannelMask ReceivingOn;
+    }
 }

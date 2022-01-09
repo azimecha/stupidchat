@@ -96,7 +96,7 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             }
 
             ServerInfoDropdown.Enabled = _server is null;
-            ChannelCreateButton.Enabled = !(_server is null);
+            CreateChannelDropdown.Enabled = _server is not null;
         }
 
         private void Server_MessagePosted(Server.Records.MessageRecord message) {
@@ -274,11 +274,25 @@ namespace Azimecha.Stupidchat.ServerApp.WindowsGUI {
             if (!(member is null)) _server.SetMemberPower(member.MemberID, power);
         }
 
-        private void ChannelCreateButton_Click(object sender, EventArgs e) {
+        private void CreateTextChannelItem_Click(object sender, EventArgs e) {
+            CreateChannel(Core.Structures.ChannelType.Text);
+        }
+
+        private void CreateVoiceChannelItem_Click(object sender, EventArgs e) {
+            CreateChannel(Core.Structures.ChannelType.Voice);
+        }
+
+        private void CreateChannel(Core.Structures.ChannelType type) {
             string strChannelName = Microsoft.VisualBasic.Interaction.InputBox("Enter the name of the channel to create:",
                 "Create Channel");
-            if ((strChannelName?.Length ?? 0) > 0)
-                _server.AddChannel(new Core.Structures.ChannelInfo() { Name = strChannelName, Type = Core.Structures.ChannelType.Text });
+
+            if ((strChannelName?.Length ?? 0) > 0) {
+                try {
+                    _server.AddChannel(new Core.Structures.ChannelInfo() { Name = strChannelName, Type = type });
+                } catch (Exception ex) {
+                    MessageBox.Show(this, ex.ToString(), "Error creating channel", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
 
         private void ChannelsList_SelectedIndexChanged(object sender, EventArgs e) {

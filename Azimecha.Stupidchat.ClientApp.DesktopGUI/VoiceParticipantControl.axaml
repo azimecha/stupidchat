@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:Azimecha.Stupidchat.ClientApp.DesktopGUI;assembly=Azimecha.Stupidchat.ClientApp.DesktopGUI"
+             mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="180"
+             x:Class="Azimecha.Stupidchat.ClientApp.DesktopGUI.VoiceParticipantControl"
+             Width="200" Height="120">
+    <Border x:Name="ControlBorder" CornerRadius="4" Margin="8">
+        <Grid Margin="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="2*"/>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="24"/>
+                <RowDefinition Height="2*"/>
+            </Grid.RowDefinitions>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="48"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <local:AvatarControl Grid.Row="1" Grid.Column="1"
+                User="{Binding Member, RelativeSource = {RelativeSource 
+                      FindAncestor, AncestorType = UserControl},
+                      Path = Member.User, Mode = OneWay}"
+                Clickable="True"/>
+            
+            <StackPanel x:Name="ActivityStack" Grid.Row="3" Grid.ColumnSpan="3"/>
+        </Grid>
+    </Border>
+</UserControl>

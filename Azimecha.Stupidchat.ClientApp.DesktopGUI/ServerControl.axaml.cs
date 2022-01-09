@@ -114,7 +114,18 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
 
         private void OnChannelChanged() {
             _ctlChannelNameText.Text = _channel?.Info.Name ?? "";
-            _ctlChannelBorder.Child = (_channel is null) ? null : new TextChannelControl() { Channel = _channel };
+
+            if (_ctlChannelBorder.Child is TextChannelControl ctlTextChannel)
+                ctlTextChannel.Channel = null;
+            else if (_ctlChannelBorder.Child is VoiceChannelControl ctlVoiceChannel)
+                ctlVoiceChannel.Channel = null;
+
+            if (_channel is null)
+                _ctlChannelBorder.Child = null;
+            else if (_channel is IVoiceChannel vc)
+                _ctlChannelBorder.Child = new VoiceChannelControl() { Channel = vc };
+            else
+                _ctlChannelBorder.Child = new TextChannelControl() { Channel = _channel };
         }
 
         private void ChannelButton_Click(object objSender, Avalonia.Interactivity.RoutedEventArgs args) {
