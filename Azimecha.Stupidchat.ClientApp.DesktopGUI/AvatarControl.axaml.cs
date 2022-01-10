@@ -19,17 +19,26 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         public static readonly DirectProperty<AvatarControl, bool> ClickableProperty =
             AvaloniaProperty.RegisterDirect<AvatarControl, bool>(nameof(User), w => w.Clickable, (w, v) => w.Clickable = v);
 
-        private Border _ctlImageBorder;
+        public static readonly DirectProperty<AvatarControl, Core.Structures.OnlineStatus> UserStatusProperty =
+            AvaloniaProperty.RegisterDirect<AvatarControl, Core.Structures.OnlineStatus>(nameof(UserStatus), w => w.UserStatus);
+
+        public static readonly DirectProperty<AvatarControl, Core.Structures.OnlineDevice> UserDeviceProperty =
+            AvaloniaProperty.RegisterDirect<AvatarControl, Core.Structures.OnlineDevice>(nameof(UserDevice), w => w.UserDevice);
+
+        private Border _ctlImageBorder, _ctlStatusBorder;
         private Image _ctlImage;
         private Popup _ctlPopup;
         private ProfileControl _ctlProfile;
         private BackgroundWorker _wkrDownloadAvatar;
         private bool _bRerun;
 
+        private Action<IUser> _procUserProfileChanged, _procUserStatusChanged;
+
         public AvatarControl() {
             InitializeComponent();
 
             _ctlImageBorder = this.FindControl<Border>("ImageBorder");
+            _ctlStatusBorder = this.FindControl<Border>("StatusBorder");
             _ctlImage = this.FindControl<Image>("ImageControl");
             _ctlPopup = this.FindControl<Popup>("ProfilePopup");
 
@@ -37,6 +46,9 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             _wkrDownloadAvatar.WorkerSupportsCancellation = true;
             _wkrDownloadAvatar.DoWork += DownloadAvatarWorker_DoWork;
             _wkrDownloadAvatar.RunWorkerCompleted += DownloadAvatarWorker_RunWorkerCompleted;
+
+            _procUserProfileChanged = new Action<IUser>(User_ProfileChanged);
+            _procUserStatusChanged = new Action<IUser>(User_StatusChanged);
         }
 
         private void InitializeComponent() {
@@ -61,10 +73,22 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             set => SetAndRaise(ClickableProperty, ref _bClickable, value);
         }
 
+        private Core.Structures.OnlineStatus _status;
+        public Core.Structures.OnlineStatus UserStatus {
+            get => _status;
+            private set => SetAndRaise(UserStatusProperty, ref _status, value);
+        }
+
+        private Core.Structures.OnlineDevice _device;
+        public Core.Structures.OnlineDevice UserDevice {
+            get => _device;
+            private set => SetAndRaise(UserDeviceProperty, ref _device, value);
+        }
+
         protected override void OnPropertyChanged<T>(AvaloniaPropertyChangedEventArgs<T> change) {
             if (change.IsEffectiveValueChange) {
                 if (change.Property == UserProperty)
-                    OnUserChanged();
+                    OnUserChanged(change.OldValue.HasValue ? (IUser)change.OldValue.Value : null);
                 else if (change.Property == WidthProperty)
                     OnWidthChanged();
                 else if (change.Property == ClickableProperty)
@@ -78,15 +102,27 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
         private static readonly Lazy<IImage> DEFAULT_AVATAR_IMAGE = new Lazy<IImage>(LoadDefaultAvatarImage, 
             System.Threading.LazyThreadSafetyMode.PublicationOnly);
 
-        private void OnUserChanged() {
+        private void OnUserChanged(IUser userOld) {
             Avatar = DEFAULT_AVATAR_IMAGE.Value;
             _bRerun = false;
 
+            if (userOld is not null) {
+                userOld.ProfileChanged -= _procUserProfileChanged;
+                userOld.StatusChanged -= _procUserStatusChanged;
+            }
+
             if (_user is not null) {
-                if (_wkrDownloadAvatar.IsBusy)
-                    _bRerun = true;
-                else
+                UserStatus = _user.CurrentStatus;
+                UserDevice = _user.CurrentDevice;
+
+                try {
                     _wkrDownloadAvatar.RunWorkerAsync(_user);
+                } catch (InvalidOperationException) {
+                    _bRerun = true;
+                }
+
+                _user.ProfileChanged += _procUserProfileChanged;
+                _user.StatusChanged += _procUserStatusChanged;
             }
 
             if (_ctlProfile is not null)
@@ -141,6 +177,52 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
                 _ctlProfile = null;
                 _ctlPopup.Child = null;
             }
+        }
+
+        private void User_ProfileChanged(IUser user) {
+            try {
+                _wkrDownloadAvatar.RunWorkerAsync(_user);
+            } catch (InvalidOperationException) {
+                _bRerun = true;
+            }
+        }
+
+        private void User_StatusChanged(IUser user) => Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {
+            UserStatus = user.CurrentStatus;
+            UserDevice = user.CurrentDevice;
+        });
+
+        private void OnStatusChanged() {
+            Color clrStatus;
+
+            switch (UserStatus) {
+                case Core.Structures.OnlineStatus.Offline:
+                    clrStatus = new Color(255, 128, 128, 128);
+                    break;
+
+                case Core.Structures.OnlineStatus.Away:
+                    clrStatus = new Color(255, 255, 255, 0);
+                    break;
+
+                case Core.Structures.OnlineStatus.Online:
+                    clrStatus = new Color(255, 0, 192, 0);
+                    break;
+
+                case Core.Structures.OnlineStatus.DoNotDisturb:
+                    clrStatus = new Color(0, 192, 0, 0);
+                    break;
+
+                default:
+                    clrStatus = Colors.Transparent;
+                    break;
+            }
+
+            _ctlStatusBorder.Background = new SolidColorBrush(clrStatus);
+        }
+
+        private void StatusBorder_PropertyChanged(object objSender, AvaloniaPropertyChangedEventArgs e) {
+            if (e.IsEffectiveValueChange && (e.Property == Border.WidthProperty))
+                _ctlStatusBorder.CornerRadius = new CornerRadius(_ctlStatusBorder.Width / 2);
         }
     }
 }

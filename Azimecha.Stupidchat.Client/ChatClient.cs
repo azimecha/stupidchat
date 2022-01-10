@@ -212,9 +212,12 @@ namespace Azimecha.Stupidchat.Client {
                 Dispose();
             }
 
-            // TODO: move this to a better place
             public void SetNickname(string strNickname) {
                 Connection.PerformRequest(new SetNicknameRequest() { Nickname = strNickname });
+            }
+
+            public void SetPresence(OnlineStatus status, OnlineDevice device) {
+                Connection.PerformRequest(new UpdatePresenceRequest() { Status = status, Device = device });
             }
 
             internal ChatClient AssociatedChatClient => _cclient;
@@ -265,7 +268,7 @@ namespace Azimecha.Stupidchat.Client {
 
                 lock (_dicMembers) {
                     if (_dicMembers.TryGetValue(IDToString(notif.Member.PublicKey), out membChanged))
-                        membChanged.UpdateInfo(notif.Member);
+                        membChanged.UpdateInfo(notif.Member, notif.ProfileChanged);
                 }
 
                 if (!(membChanged is null))
@@ -450,13 +453,19 @@ namespace Azimecha.Stupidchat.Client {
                 _user?.EnsureMembershipExists(this);
             }
 
-            internal void UpdateInfo(MemberInfo info) {
-                UserProfile profile = SignedStructSerializer.Deserialize<UserProfile>(info.Profile, info.ProfileSignature, info.PublicKey);
+            internal void UpdateInfo(MemberInfo info, bool bUpdateProfile) {
+                UserProfile? profile = bUpdateProfile
+                    ? (UserProfile?)SignedStructSerializer.Deserialize<UserProfile>(info.Profile, info.ProfileSignature, info.PublicKey) 
+                    : null;
 
                 lock (_objInfoMutex) {
-                    _user.UpdateProfile(profile);
+                    if (bUpdateProfile)
+                        _user.UpdateProfile(profile.Value);
+
                     _info = info;
                 }
+
+                _user.OnStatusMaybeChanged();
 
                 Changed?.Invoke(this);
             }
@@ -772,7 +781,7 @@ namespace Azimecha.Stupidchat.Client {
             private IList<Member> _lstMemberships;
             private byte[] _arrPublicKey;
             private UserProfile _profile;
-            private object _objProfileMutex;
+            private object _objProfileMutex, _objStatusMutex;
             private Lazy<TemporaryFile> _tfAvatar;
 
             internal User(ReadOnlySpan<byte> spanPublicKey, UserProfile profile) {
@@ -780,6 +789,7 @@ namespace Azimecha.Stupidchat.Client {
                 _arrPublicKey = spanPublicKey.ToArray();
                 _profile = profile;
                 _objProfileMutex = new object();
+                _objStatusMutex = new object();
                 _tfAvatar = new Lazy<TemporaryFile>(DownloadAvatar, LazyThreadSafetyMode.ExecutionAndPublication);
             }
 
@@ -793,18 +803,29 @@ namespace Azimecha.Stupidchat.Client {
             internal void AddMembership(Member memb) {
                 lock (_lstMemberships)
                     _lstMemberships.Add(memb);
+
+                OnStatusMaybeChanged();
             }
 
             internal void RemoveMembership(Member memb) {
                 lock (_lstMemberships)
                     _lstMemberships.Remove(memb);
+
+                OnStatusMaybeChanged();
             }
 
             internal void UpdateProfile(UserProfile profile) {
+                bool bDidChange = false;
+
                 lock (_objProfileMutex) {
-                    if (profile.UpdateTime > _profile.UpdateTime)
+                    if (profile.UpdateTime > _profile.UpdateTime) {
+                        bDidChange = true;
                         _profile = profile;
+                    }
                 }
+
+                if (bDidChange) 
+                    ProfileChanged?.Invoke(this);
             }
 
             public IEnumerable<IMember> Memberships {
@@ -836,6 +857,45 @@ namespace Azimecha.Stupidchat.Client {
                         : ((profile.Username?.Length ?? 0) > 0 ? profile.Username : _arrPublicKey.ToHexString());
                 }
             }
+
+            public OnlineStatus CurrentStatus { get; private set; }
+            public OnlineDevice CurrentDevice { get; private set; }
+
+            internal void OnStatusMaybeChanged() {
+                bool bDidChange = false;
+
+                lock (_objStatusMutex) {
+                    Tuple<OnlineStatus, OnlineDevice> tupNewStatus = CalculateStatus();
+                    if ((tupNewStatus.Item1 != CurrentStatus) || (tupNewStatus.Item2 != CurrentDevice)) {
+                        CurrentStatus = tupNewStatus.Item1;
+                        CurrentDevice = tupNewStatus.Item2;
+                        bDidChange = true;
+                    }
+                }
+
+                if (bDidChange)
+                    StatusChanged?.Invoke(this);
+            }
+
+            private Tuple<OnlineStatus, OnlineDevice> CalculateStatus() {
+                OnlineStatus statusHighest = OnlineStatus.Offline;
+                OnlineDevice devHighest = OnlineDevice.None;
+
+                foreach (Member memb in Memberships) {
+                    OnlineStatus status = memb.Info.Status;
+                    if (status > statusHighest)
+                        statusHighest = status;
+
+                    OnlineDevice dev = memb.Info.Device;
+                    if (dev > devHighest)
+                        devHighest = dev;
+                }
+
+                return new Tuple<OnlineStatus, OnlineDevice>(statusHighest, devHighest);
+            }
+
+            public event Action<IUser> ProfileChanged;
+            public event Action<IUser> StatusChanged;
         }
 
         private static TemporaryFile DownloadFile(string strURL) {

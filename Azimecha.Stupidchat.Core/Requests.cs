@@ -120,4 +120,10 @@ namespace Azimecha.Stupidchat.Core.Requests {
     public class VCLeaveRequest : Protocol.RequestMessage {
         [DataMember] public long ChannelID;
     }
+
+    [DataContract]
+    public class UpdatePresenceRequest : Protocol.RequestMessage {
+        [DataMember] public OnlineStatus Status;
+        [DataMember] public OnlineDevice Device;
+    }
 }

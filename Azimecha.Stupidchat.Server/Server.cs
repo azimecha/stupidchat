@@ -413,7 +413,10 @@ namespace Azimecha.Stupidchat.Server {
             });
 
             if (bDidUpdate) {
-                BroadcastNotification(new Core.Notifications.MemberInfoChangedNotification() { Member = memb.ToMemberInfo() });
+                BroadcastNotification(new Core.Notifications.MemberInfoChangedNotification() { 
+                    Member = memb.ToMemberInfo(),
+                    ProfileChanged = true
+                });
                 MemberProfileUpdated?.Invoke(memb);
             }
 
@@ -520,5 +523,23 @@ namespace Azimecha.Stupidchat.Server {
         [Processor(typeof(Core.Requests.VCLeaveRequest))]
         private Core.Requests.GenericSuccessResponse HandleVCLeaveRequest(ClientConnection conn, Core.Requests.VCLeaveRequest req)
             => GetVoiceChannel(req.ChannelID).ProcessLeaveRequest(conn, req);
+
+        [Processor(typeof(Core.Requests.UpdatePresenceRequest))]
+        private Core.Requests.GenericSuccessResponse HandlePresenceUpdateRequest(ClientConnection conn, Core.Requests.UpdatePresenceRequest req) {
+            Records.MemberRecord memb = null;
+
+            SQLite.SQLiteConnection db = Database;
+            db.RunInTransaction(() => {
+                memb = GetMemberRecord(conn.ClientPublicKey);
+                memb.Status = req.Status;
+                memb.Device = req.Device;
+                db.Update(memb);
+            });
+
+            BroadcastNotification(new Core.Notifications.MemberInfoChangedNotification() { Member = memb.ToMemberInfo() });
+            MemberOtherInfoUpdated?.Invoke(memb);
+
+            return new Core.Requests.GenericSuccessResponse();
+        }
     }
 }

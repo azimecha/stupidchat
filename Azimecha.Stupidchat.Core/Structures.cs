@@ -33,6 +33,7 @@ namespace Azimecha.Stupidchat.Core.Structures {
         [DataMember] public string DisplayName;
         [DataMember] public string Bio;
         [DataMember] public string AvatarURL;
+        [DataMember] public string StatusDescription;
         [DataMember] public long UpdateTime;
     }
 
@@ -62,6 +63,8 @@ namespace Azimecha.Stupidchat.Core.Structures {
         [DataMember] public PowerLevel Power;
         [DataMember] public byte[] Profile; // UserProfile object
         [DataMember] public byte[] ProfileSignature;
+        [DataMember] public OnlineStatus Status;
+        [DataMember] public OnlineDevice Device;
     }
 
     [Flags]
@@ -81,5 +84,20 @@ namespace Azimecha.Stupidchat.Core.Structures {
         [DataMember] public byte[] PublicKey;
         [DataMember] public VCSubchannelMask TransmittingOn;
         [DataMember] public VCSubchannelMask ReceivingOn;
+    }
+
+    public enum OnlineStatus : int {
+        Offline = 0,
+        Away = 100,
+        Online = 200,
+        DoNotDisturb = 300
+    }
+
+    public enum OnlineDevice : int {
+        None = 0,
+        Mobile = 100,
+        Browser = 200,
+        Desktop = 300,
+        VirtualReality = 400
     }
 }

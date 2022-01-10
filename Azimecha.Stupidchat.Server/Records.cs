@@ -66,6 +66,8 @@ namespace Azimecha.Stupidchat.Server.Records {
         public Core.Structures.PowerLevel Power { get; set; }
         public byte[] SignedProfile { get; set; }
         public byte[] ProfileSignature { get; set; }
+        public Core.Structures.OnlineStatus Status { get; set; }
+        public Core.Structures.OnlineDevice Device { get; set; }
 
         public Core.Structures.MemberInfo ToMemberInfo() => new Core.Structures.MemberInfo {
             Nickname = Nickname,

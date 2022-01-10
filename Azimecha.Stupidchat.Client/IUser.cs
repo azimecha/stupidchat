@@ -9,7 +9,12 @@ namespace Azimecha.Stupidchat.Client {
         ReadOnlySpan<byte> PublicKey { get; }
         IEnumerable<IMember> Memberships { get; }
         string DisplayName { get; }
+        OnlineStatus CurrentStatus { get; }
+        OnlineDevice CurrentDevice { get; }
 
         System.IO.Stream OpenAvatar();
+
+        event Action<IUser> ProfileChanged;
+        event Action<IUser> StatusChanged;
     }
 }

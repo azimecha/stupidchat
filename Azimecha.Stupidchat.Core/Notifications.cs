@@ -18,6 +18,7 @@ namespace Azimecha.Stupidchat.Core.Notifications {
     [DataContract]
     public class MemberInfoChangedNotification : Protocol.NotificationMessage {
         [DataMember] public MemberInfo Member;
+        [DataMember] public bool ProfileChanged;
     }
 
     [DataContract]
