@@ -133,7 +133,7 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             IUser user = (IUser)e.Argument;
 
             using (System.IO.Stream stmAvatar = user.OpenAvatar())
-                if (!(stmAvatar is null))
+                if (stmAvatar is not null)
                     e.Result = new Avalonia.Media.Imaging.Bitmap(stmAvatar);
         }
 
@@ -141,8 +141,11 @@ namespace Azimecha.Stupidchat.ClientApp.DesktopGUI {
             if (_bRerun) {
                 _bRerun = false;
 
-                if (_user is not null)
-                    _wkrDownloadAvatar.RunWorkerAsync(_user);
+                if (_user is not null) {
+                    try {
+                        _wkrDownloadAvatar.RunWorkerAsync(_user);
+                    } catch (InvalidOperationException) { }
+                }
 
                 return;
             }

@@ -164,6 +164,7 @@ namespace Azimecha.Stupidchat.Server {
         public void SetMemberNickname(long nMemberID, string strNickname)
             => ModifyMember(nMemberID, memb => memb.Nickname = strNickname, false, true);
 
+        // used by public functions that modify the member
         private void ModifyMember(long nMemberID, Action<Records.MemberRecord> procAction, bool bModifiesProfile, bool bModifiesOtherInfo) {
             Records.MemberRecord member = null;
             SQLite.SQLiteConnection db = Database;
@@ -224,6 +225,9 @@ namespace Azimecha.Stupidchat.Server {
             db.CreateTable<Records.ChannelRecord>();
             db.CreateTable<Records.MemberRecord>();
             db.CreateTable<Records.MessageRecord>();
+
+            // all members are offline since the server just started
+            db.Execute($"UPDATE {nameof(Records.MemberRecord)} SET IsOnline = 0");
         }
 
         private void AcceptConnection(TcpClient client) {
@@ -263,6 +267,8 @@ namespace Azimecha.Stupidchat.Server {
                 MemberJoined?.Invoke(member);
                 BroadcastNotification(new Core.Notifications.MemberJoinedNotification() { Member = member.ToMemberInfo() });
             }
+
+            UpdateMemberNonprofile(conn.ClientPublicKey.ToArray(), memb => memb.IsOnline = true);
         }
 
         internal void BroadcastNotification(NotificationMessage msgNotification) {
@@ -282,6 +288,8 @@ namespace Azimecha.Stupidchat.Server {
         }
 
         internal void OnClientDisconnected(ClientConnection conn) {
+            UpdateMemberNonprofile(conn.ClientPublicKey.ToArray(), memb => memb.IsOnline = false);
+
             string strClientUserID = conn.ClientPublicKey.ToHexString();
             ClientConnection connRemoved;
             _dicConnections?.TryRemove(strClientUserID, out connRemoved);
@@ -425,18 +433,7 @@ namespace Azimecha.Stupidchat.Server {
 
         [Processor(typeof(Core.Requests.SetNicknameRequest))]
         private Core.Requests.GenericSuccessResponse HandleSetNicknameRequest(ClientConnection conn, Core.Requests.SetNicknameRequest req) {
-            Records.MemberRecord memb = null;
-
-            SQLite.SQLiteConnection db = Database;
-            db.RunInTransaction(() => {
-                memb = GetMemberRecord(conn.ClientPublicKey);
-                memb.Nickname = req.Nickname;
-                db.Update(memb);
-            });
-
-            BroadcastNotification(new Core.Notifications.MemberInfoChangedNotification() { Member = memb.ToMemberInfo() });
-            MemberOtherInfoUpdated?.Invoke(memb);
-
+            UpdateMemberNonprofile(conn.ClientPublicKey.ToArray(), memb => memb.Nickname = req.Nickname);
             return new Core.Requests.GenericSuccessResponse();
         }
 
@@ -526,20 +523,24 @@ namespace Azimecha.Stupidchat.Server {
 
         [Processor(typeof(Core.Requests.UpdatePresenceRequest))]
         private Core.Requests.GenericSuccessResponse HandlePresenceUpdateRequest(ClientConnection conn, Core.Requests.UpdatePresenceRequest req) {
+            UpdateMemberNonprofile(conn.ClientPublicKey.ToArray(), memb => { memb.Status = req.Status; memb.Device = req.Device; });
+            return new Core.Requests.GenericSuccessResponse();
+        }
+
+        // used by private functions that modify the member's non-profile information
+        public void UpdateMemberNonprofile(byte[] arrMemberPublicKey, Action<Records.MemberRecord> procUpdate) {
             Records.MemberRecord memb = null;
 
             SQLite.SQLiteConnection db = Database;
             db.RunInTransaction(() => {
-                memb = GetMemberRecord(conn.ClientPublicKey);
-                memb.Status = req.Status;
-                memb.Device = req.Device;
+                memb = GetMemberRecord(arrMemberPublicKey);
+                procUpdate(memb);
                 db.Update(memb);
             });
 
+            // note that this will send info change notifications even if the member is appearing offline (maybe change)
             BroadcastNotification(new Core.Notifications.MemberInfoChangedNotification() { Member = memb.ToMemberInfo() });
             MemberOtherInfoUpdated?.Invoke(memb);
-
-            return new Core.Requests.GenericSuccessResponse();
         }
     }
 }

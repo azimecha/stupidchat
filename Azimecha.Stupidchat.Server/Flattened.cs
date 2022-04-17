@@ -27,5 +27,8 @@ namespace Azimecha.Stupidchat.Server.Flattened {
         [DataMember] public string Bio;
         [DataMember] public string AvatarURL;
         [DataMember] public DateTime LastProfileUpdate;
+        [DataMember] public Core.Structures.OnlineStatus LastStatus;
+        [DataMember] public Core.Structures.OnlineDevice LastDevice;
+        [DataMember] public bool IsOnline;
     }
 }

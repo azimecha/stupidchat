@@ -68,13 +68,16 @@ namespace Azimecha.Stupidchat.Server.Records {
         public byte[] ProfileSignature { get; set; }
         public Core.Structures.OnlineStatus Status { get; set; }
         public Core.Structures.OnlineDevice Device { get; set; }
+        public bool IsOnline { get; set; }
 
         public Core.Structures.MemberInfo ToMemberInfo() => new Core.Structures.MemberInfo {
             Nickname = Nickname,
             Power = Power,
             Profile = SignedProfile,
             ProfileSignature = ProfileSignature,
-            PublicKey = Utils.HexStringToBytes(PublicKeyString)
+            PublicKey = Utils.HexStringToBytes(PublicKeyString),
+            Status = IsOnline ? Status : Core.Structures.OnlineStatus.Offline,
+            Device = IsOnline ? Device : Core.Structures.OnlineDevice.None
         };
 
         public Flattened.Member Flatten() {
